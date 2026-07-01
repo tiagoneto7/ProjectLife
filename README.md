@@ -68,6 +68,15 @@ Página protegida por password simples em `/admin` que lista todas as inscriçõ
 
 ⚠️ É uma proteção simples (uma única password partilhada), suficiente para uso interno da equipa — não é um sistema de utilizadores.
 
+## Regulamento (PDF) para download
+
+O ficheiro `public/regulamento-fire.pdf` fica acessível em `/regulamento-fire.pdf` e é
+sugerido ao inscrito logo após submeter o formulário, e também linkado no email de
+confirmação (via `NEXT_PUBLIC_SITE_URL`, para gerar o link absoluto).
+
+Para atualizar o regulamento, basta substituir esse ficheiro por uma versão nova com o
+mesmo nome.
+
 ## 5. Correr localmente
 
 ```bash
@@ -80,7 +89,7 @@ Abre [http://localhost:3000](http://localhost:3000).
 
 1. Cria um repositório no GitHub e faz push deste projeto.
 2. Em [vercel.com](https://vercel.com), "Add New Project" → importa o repositório.
-3. Em "Environment Variables", adiciona as mesmas 7 variáveis do `.env.local`.
+3. Em "Environment Variables", adiciona as mesmas variáveis do `.env.local` (define `NEXT_PUBLIC_SITE_URL` com o URL final do Vercel, ex: `https://projectlife.vercel.app`).
 4. Deploy. Ficas com um URL tipo `projectlife.vercel.app`.
 
 Cada vez que fizeres push para o `main`, o Vercel faz deploy automático.

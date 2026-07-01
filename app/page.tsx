@@ -16,7 +16,7 @@ export default function Home() {
           <dl className="mt-6 space-y-1.5 text-haze">
             <div>
               <dt className="sr-only">Data</dt>
-              <dd>12, 13 e 14 de Setembro</dd>
+              <dd>11, 12 e 13 de Setembro, 2026</dd>
             </div>
             <div>
               <dt className="sr-only">Morada</dt>
@@ -35,6 +35,15 @@ export default function Home() {
 
         <footer className="mt-8 text-center text-sm text-haze">
           Dúvidas? +351 962 032 936 · projectlife4all@gmail.com
+          <br />
+          <a
+            href="https://linktr.ee/project_life_"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-ember hover:text-embersoft"
+          >
+            linktr.ee/project_life_
+          </a>
         </footer>
       </div>
     </main>
