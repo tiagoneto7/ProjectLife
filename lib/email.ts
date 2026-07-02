@@ -134,8 +134,7 @@ export async function sendCoordinatorNotification(data: InscricaoInput) {
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
 
         <div style="padding: 4px 0 20px;">
-          <p style="margin:0 0 6px; font-size: 12px; letter-spacing:0.15em; text-transform:uppercase; color:#9a9a9a;">Project Life</p>
-          <h1 style="margin:0; font-size: 20px; color:#E8633A;">Nova inscrição no Fire 🔥</h1>
+          <h1 style="margin:0; font-size: 20px; color:#E8633A;">Nova inscrição no Fire</h1>
         </div>
 
         <table style="width:100%; border-collapse:collapse; font-size:14px;">

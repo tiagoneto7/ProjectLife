@@ -30,7 +30,7 @@ npm install
 
 ## 2. Configurar a Google Sheet
 
-1. Cria uma Google Sheet nova, com uma aba chamada **"Inscrições"** e a primeira linha com cabeçalhos, por exemplo: `Data | Nome | Data de Nascimento | Email | Contacto | Contacto Emergência`.
+1. Cria uma Google Sheet nova, com uma aba chamada **"Inscrições"** e a primeira linha com cabeçalhos: `Data | Nome | Data de Nascimento | Email | Contacto | Contacto Emergência | Estado`.
 2. Vai a [console.cloud.google.com](https://console.cloud.google.com), cria um projeto (ou usa um existente).
 3. Ativa a **Google Sheets API** (menu "APIs & Services" → "Enable APIs").
 4. Cria uma **Service Account** ("APIs & Services" → "Credentials" → "Create Credentials" → "Service Account").
@@ -44,10 +44,8 @@ npm install
 
 1. Cria conta grátis em [resend.com](https://resend.com).
 2. Gera uma **API Key** (Dashboard → API Keys).
-3. Para já podes usar o domínio de testes do Resend para o `FROM_EMAIL` (funciona logo, mas com limitações). Quando quiseres usar o teu próprio domínio (ex: `inscricoes@projectlife.pt`), o Resend guia-te a verificar o domínio (adicionar uns registos DNS).
+3. Domínio `projectlife.pt` já verificado no Resend (DKIM, SPF, MX, DMARC configurados em `my.dominios.pt`). `FROM_EMAIL` usa `inscricoes@projectlife.pt` — já envia para qualquer destinatário, sem as limitações do domínio de testes.
 4. `COORDINATOR_EMAIL` é o email que recebe uma notificação de cada nova inscrição, com um link para a Google Sheet.
-
-⚠️ **Limitação do domínio de testes (`onboarding@resend.dev`)**: só consegues enviar emails para o próprio email da tua conta Resend. Ou seja, enquanto não verificares um domínio próprio, o email de confirmação só chega a inscritos cujo email seja igual ao da tua conta Resend, e o `COORDINATOR_EMAIL` tem de ser esse mesmo email para a notificação funcionar.
 
 ## 4. Variáveis de ambiente
 
@@ -65,6 +63,8 @@ Página protegida por password simples em `/admin` que lista todas as inscriçõ
 
 1. Define `ADMIN_PASSWORD` no `.env.local` (e no Vercel, para produção).
 2. Abre `/admin` e entra com essa password.
+
+A coluna **Estado** (`Pendente`/`Pago`) é escrita automaticamente como "Pendente" em cada nova inscrição, e é manual: para marcar como paga, edita diretamente essa célula na Google Sheet (até termos os pagamentos MB WAY automatizados).
 
 ⚠️ É uma proteção simples (uma única password partilhada), suficiente para uso interno da equipa — não é um sistema de utilizadores.
 

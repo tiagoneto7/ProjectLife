@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 import type { InscricaoInput } from "./validation";
 
-const SHEET_RANGE = "Inscrições!A:F";
+const SHEET_RANGE = "Inscrições!A:G";
 
 /**
  * Cria o cliente autenticado do Google Sheets a partir da Service Account.
@@ -48,6 +48,7 @@ export async function appendInscricaoToSheet(data: InscricaoInput) {
           data.email,
           data.contacto,
           data.contactoEmergencia,
+          "Pendente",
         ],
       ],
     },
@@ -61,6 +62,7 @@ export type InscritoRow = {
   email: string;
   contacto: string;
   contactoEmergencia: string;
+  estado: string;
 };
 
 /** Lê todas as inscrições da Sheet (sem a linha de cabeçalho). */
@@ -69,7 +71,7 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEET_RANGE.split("!")[0]}!A2:F`,
+    range: `${SHEET_RANGE.split("!")[0]}!A2:G`,
   });
 
   const rows = res.data.values ?? [];
@@ -81,5 +83,6 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
     email: row[3] ?? "",
     contacto: row[4] ?? "",
     contactoEmergencia: row[5] ?? "",
+    estado: row[6] || "Pendente",
   }));
 }

@@ -14,11 +14,14 @@ export default async function AdminPage() {
   }
 
   const inscritos = await getInscricoes();
+  const validados = inscritos.filter((i) => i.estado.toLowerCase() === "pago").length;
 
   return (
     <div className="mx-auto max-w-5xl p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Inscritos ({inscritos.length})</h1>
+        <h1 className="text-xl font-semibold">
+          Inscritos ({inscritos.length}) · Validados ({validados})
+        </h1>
         <AdminLogoutButton />
       </div>
       <div className="overflow-x-auto">
@@ -31,17 +34,34 @@ export default async function AdminPage() {
               <th className="p-2">Email</th>
               <th className="p-2">Contacto</th>
               <th className="p-2">Contacto Emergência</th>
+              <th className="p-2">Estado</th>
             </tr>
           </thead>
           <tbody>
             {inscritos.map((inscrito, i) => (
               <tr key={i} className="border-b">
-                <td className="p-2">{new Date(inscrito.data).toLocaleString("pt-PT")}</td>
+                <td className="p-2">
+                  {new Date(inscrito.data).toLocaleString("pt-PT", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </td>
                 <td className="p-2">{inscrito.nome}</td>
                 <td className="p-2">{inscrito.dataNascimento}</td>
                 <td className="p-2">{inscrito.email}</td>
                 <td className="p-2">{inscrito.contacto}</td>
                 <td className="p-2">{inscrito.contactoEmergencia}</td>
+                <td className="p-2">
+                  {inscrito.estado.toLowerCase() === "pago" ? (
+                    <span title="Pago" className="text-lg text-green-600">
+                      ✅
+                    </span>
+                  ) : (
+                    <span title="Pendente" className="text-lg text-orange-500">
+                      ⚠️
+                    </span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
