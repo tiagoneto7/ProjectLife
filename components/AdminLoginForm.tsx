@@ -45,7 +45,7 @@ export default function AdminLoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded bg-orange-600 px-3 py-2 text-white disabled:opacity-50"
+        className="w-full rounded bg-brand px-3 py-2 text-brandink disabled:opacity-50"
       >
         {loading ? "A entrar..." : "Entrar"}
       </button>

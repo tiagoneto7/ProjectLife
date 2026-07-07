@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -15,8 +17,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Inscrição | Fire",
-  description: "Inscrição para o campo Fire — Project Life",
+  title: "Project Life",
+  description: "Associação Project Life — campo Fire e mais.",
 };
 
 export default function RootLayout({
@@ -26,8 +28,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-PT" className={`${fraunces.variable} ${inter.variable}`}>
-      <body className="font-body bg-dusk text-parchment antialiased">
-        {children}
+      <body className="flex min-h-screen flex-col font-body bg-surface text-ink antialiased">
+        <SiteHeader />
+        <div className="flex-1">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );

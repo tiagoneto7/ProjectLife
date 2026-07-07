@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 import type { InscricaoInput } from "./validation";
 
-const SHEET_RANGE = "Inscrições!A:G";
+const SHEET_RANGE = "Inscrições!A:T";
 
 /**
  * Cria o cliente autenticado do Google Sheets a partir da Service Account.
@@ -48,6 +48,19 @@ export async function appendInscricaoToSheet(data: InscricaoInput) {
           data.email,
           data.contacto,
           data.contactoEmergencia,
+          data.restricoesAlimentares ?? "",
+          data.restricoesAtividadeFisica ?? "",
+          data.alergias ?? "",
+          data.outros ?? "",
+          data.menorDe18 === "sim" ? "Sim" : "Não",
+          data.nomeResponsavel ?? "",
+          data.grauParentesco ?? "",
+          data.emailResponsavel ?? "",
+          data.contactoResponsavel ?? "",
+          data.observacoes ?? "",
+          data.consentimentoDados ? "Sim" : "Não",
+          data.consentimentoImagens ? "Sim" : "Não",
+          data.consentimentoContacto ? "Sim" : "Não",
           "Pendente",
         ],
       ],
@@ -55,13 +68,40 @@ export async function appendInscricaoToSheet(data: InscricaoInput) {
   });
 }
 
+export async function updateEstado(rowIndex: number, estado: string) {
+  const { sheets, sheetId } = getSheetsClient();
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: sheetId,
+    range: `Inscrições!T${rowIndex}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[estado]],
+    },
+  });
+}
+
 export type InscritoRow = {
+  rowIndex: number;
   data: string;
   nome: string;
   dataNascimento: string;
   email: string;
   contacto: string;
   contactoEmergencia: string;
+  restricoesAlimentares: string;
+  restricoesAtividadeFisica: string;
+  alergias: string;
+  outros: string;
+  menorDe18: string;
+  nomeResponsavel: string;
+  grauParentesco: string;
+  emailResponsavel: string;
+  contactoResponsavel: string;
+  observacoes: string;
+  consentimentoDados: string;
+  consentimentoImagens: string;
+  consentimentoContacto: string;
   estado: string;
 };
 
@@ -71,18 +111,32 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEET_RANGE.split("!")[0]}!A2:G`,
+    range: `${SHEET_RANGE.split("!")[0]}!A2:T`,
   });
 
   const rows = res.data.values ?? [];
 
-  return rows.map((row) => ({
+  return rows.map((row, i) => ({
+    rowIndex: i + 2,
     data: row[0] ?? "",
     nome: row[1] ?? "",
     dataNascimento: row[2] ?? "",
     email: row[3] ?? "",
     contacto: row[4] ?? "",
     contactoEmergencia: row[5] ?? "",
-    estado: row[6] || "Pendente",
+    restricoesAlimentares: row[6] ?? "",
+    restricoesAtividadeFisica: row[7] ?? "",
+    alergias: row[8] ?? "",
+    outros: row[9] ?? "",
+    menorDe18: row[10] ?? "",
+    nomeResponsavel: row[11] ?? "",
+    grauParentesco: row[12] ?? "",
+    emailResponsavel: row[13] ?? "",
+    contactoResponsavel: row[14] ?? "",
+    observacoes: row[15] ?? "",
+    consentimentoDados: row[16] ?? "",
+    consentimentoImagens: row[17] ?? "",
+    consentimentoContacto: row[18] ?? "",
+    estado: row[19] || "Pendente",
   }));
 }

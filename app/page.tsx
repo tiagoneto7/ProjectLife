@@ -1,50 +1,33 @@
-import InscricaoForm from "@/components/InscricaoForm";
+import Link from "next/link";
+import PhotoGallery from "@/components/PhotoGallery";
+import { getGaleriaPreview } from "@/lib/galeria";
 
 export default function Home() {
+  const preview = getGaleriaPreview(8);
+
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-ember-glow" />
-
-      <div className="relative mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-16">
-        <header className="mb-10 text-center">
-          <p className="font-display text-sm uppercase tracking-[0.25em] text-gold">
-            Project Life
-          </p>
-          <h1 className="mt-3 font-display text-5xl font-semibold italic text-parchment">
-            Fire
-          </h1>
-          <dl className="mt-6 space-y-1.5 text-haze">
-            <div>
-              <dt className="sr-only">Data</dt>
-              <dd>11, 12 e 13 de Setembro, 2026</dd>
-            </div>
-            <div>
-              <dt className="sr-only">Morada</dt>
-              <dd>Rua Constantina Fernandes Nº 15, Poceirão</dd>
-            </div>
-            <div>
-              <dt className="sr-only">Valor</dt>
-              <dd className="text-gold font-medium">35€</dd>
-            </div>
-          </dl>
-        </header>
-
-        <div className="rounded-2xl border border-white/10 bg-charcoal/60 p-7 backdrop-blur-sm">
-          <InscricaoForm />
-        </div>
-
-        <footer className="mt-8 text-center text-sm text-haze">
-          Dúvidas? +351 962 032 936 · projectlife4all@gmail.com
+    <main>
+      <div className="mx-auto max-w-5xl px-6 py-20 text-center">
+        <p className="text-sm font-medium uppercase tracking-[0.1em] text-inksoft sm:hidden">
+          Associação Project Life
+        </p>
+        <h1 className="mt-4 text-5xl font-semibold text-ink">Make it happen.</h1>
+        <p className="mx-auto mt-6 max-w-lg text-[17px] leading-relaxed text-inkmuted">
+          Acreditamos no valor de caminhar em comunidade.
           <br />
-          <a
-            href="https://linktr.ee/project_life_"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-ember hover:text-embersoft"
-          >
-            linktr.ee/project_life_
-          </a>
-        </footer>
+          Juntos, com propósito e esperança.
+        </p>
+
+        <Link
+          href="/fire"
+          className="mt-8 inline-block rounded-lg bg-brand px-7 py-3.5 font-bold text-white transition hover:bg-branddark"
+        >
+          Inscreve-te no Fire
+        </Link>
+
+        <section className="mt-24 mb-8 text-left">
+          <PhotoGallery photos={preview} layout="carousel" moreHref="/galeria" moreLabel="Ver mais" />
+        </section>
       </div>
     </main>
   );

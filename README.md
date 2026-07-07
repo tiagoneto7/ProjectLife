@@ -30,7 +30,7 @@ npm install
 
 ## 2. Configurar a Google Sheet
 
-1. Cria uma Google Sheet nova, com uma aba chamada **"Inscrições"** e a primeira linha com cabeçalhos: `Data | Nome | Data de Nascimento | Email | Contacto | Contacto Emergência | Estado`.
+1. Cria uma Google Sheet nova, com uma aba chamada **"Inscrições"** e a primeira linha com cabeçalhos: `Data | Nome | Data de Nascimento | Email | Contacto | Contacto Emergência | Restrições Alimentares | Restrições na Atividade Física | Alergias | Outros | Menor de 18 | Nome do Responsável | Grau de Parentesco | Email do Responsável | Contacto do Responsável | Observações | Consentimento Dados | Consentimento Imagens | Consentimento Contacto | Estado`.
 2. Vai a [console.cloud.google.com](https://console.cloud.google.com), cria um projeto (ou usa um existente).
 3. Ativa a **Google Sheets API** (menu "APIs & Services" → "Enable APIs").
 4. Cria uma **Service Account** ("APIs & Services" → "Credentials" → "Create Credentials" → "Service Account").
