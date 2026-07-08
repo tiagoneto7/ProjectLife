@@ -91,9 +91,6 @@ export default function InscricaoForm() {
     return (
       <div>
         <div className="text-center">
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-brand/15">
-            <FlameIcon className="h-7 w-7 text-branddark" />
-          </div>
           <h2 className="text-2xl font-semibold text-ink">Inscrição confirmada</h2>
           <p className="mt-3 text-inkmuted">
             Enviámos um email de confirmação para <strong className="text-ink">{values.email}</strong>.
@@ -121,9 +118,9 @@ export default function InscricaoForm() {
           <StepNumber>1</StepNumber>
           <div className="flex-1 pt-0.5">
             <p>
-              Paga o valor de <strong>35€</strong> através de um destes métodos:
+              Efetua o pagamento de <strong>35€</strong> através de um destes métodos:
             </p>
-            <ul className="mt-2.5 space-y-2">
+            <ul className="mt-2 list-disc space-y-1 pl-5">
               <PaymentOption label="MBWAY" value="+351 937780027" />
               <PaymentOption label="Transferência Bancária" value="PT50001800036195088702043" />
               <PaymentOption label="Pagamento em mãos" />
@@ -163,17 +160,21 @@ export default function InscricaoForm() {
           </p>
         </div>
 
+        <div className="mt-[18px] flex gap-3.5">
+          <StepNumber>3</StepNumber>
+          <p className="flex-1 pt-0.5">
+            Aguarda que validemos o pagamento e entremos em contacto contigo para mais novidades.
+          </p>
+        </div>
+
+        <p className="mt-10 text-center text-xs text-inksoft">Para te preparares, consulta o regulamento:</p>
         <a
           href="/regulamento-fire.pdf"
           download
-          className="mt-6 block text-center font-medium text-branddark hover:underline"
+          className="mt-1 block text-center text-sm font-medium text-branddark hover:underline"
         >
-          📄 Descarregar regulamento (PDF)
+          Descarregar regulamento (PDF)
         </a>
-
-        <p className="mt-[18px] border-t border-line pt-3.5 text-center text-sm text-inkmuted">
-          Podes continuar mais tarde — estes passos estão no email de confirmação que enviámos.
-        </p>
       </div>
     );
   }
@@ -443,7 +444,7 @@ export default function InscricaoForm() {
           !values.consentimentoImagens ||
           !values.consentimentoContacto
         }
-        className="w-full rounded-lg bg-brand px-6 py-3 font-bold text-white transition hover:bg-branddark disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-lg bg-brand px-6 py-3 font-bold text-white transition hover:bg-branddark disabled:cursor-not-allowed disabled:bg-line disabled:text-inksoft disabled:hover:bg-line"
       >
         {status === "submitting" ? "A enviar…" : "Submeter inscrição"}
       </button>
@@ -528,20 +529,9 @@ function StepNumber({ children }: { children: React.ReactNode }) {
 
 function PaymentOption({ label, value }: { label: string; value?: string }) {
   return (
-    <li className="flex items-center justify-between rounded-lg border border-line bg-surfacealt px-3.5 py-2.5 text-sm">
-      <span className="text-inkmuted">{label}</span>
-      {value && <span className="font-semibold text-ink">{value}</span>}
+    <li className="break-words text-sm text-inkmuted">
+      {label}
+      {value && <span className="font-medium text-ink"> — {value}</span>}
     </li>
-  );
-}
-
-function FlameIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M12 2c1 3-2 4-2 7a3 3 0 0 0 6 0c0-1-.5-2-.5-2 2 1 3.5 3.5 3.5 6a7 7 0 1 1-14 0c0-4 2-6 3-8 1.5-3 3-3 4-3z"
-        fill="currentColor"
-      />
-    </svg>
   );
 }

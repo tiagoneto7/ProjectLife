@@ -49,9 +49,16 @@ export async function sendConfirmationEmail(data: InscricaoInput) {
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
 
-        <div style="text-align:center; padding: 8px 0 24px;">
-          <h1 style="margin:0; font-size: 24px; color:#1F2430;">Bem-vindo ao Fire 🔥</h1>
-        </div>
+        <table style="border-collapse:collapse; margin: 8px 0 24px;">
+          <tr>
+            <td style="padding-right:16px; vertical-align:middle;">
+              <img src="${siteUrl}/fire-logo.webp" alt="Fire" width="96" height="96" style="border-radius:50%; display:block;" />
+            </td>
+            <td style="vertical-align:middle;">
+              <h1 style="margin:0; font-size: 24px; color:#1F2430;">Bem-vindo ao Fire</h1>
+            </td>
+          </tr>
+        </table>
 
         <p>Olá, <strong>${escapeHtml(data.nome)}</strong>,</p>
         <p style="color:#5a5a5a;">Estamos felizes por te termos a bordo! Agora que recebemos a tua inscrição, segue os próximos passos para a validarmos.</p>
@@ -71,7 +78,7 @@ export async function sendConfirmationEmail(data: InscricaoInput) {
               <div style="border: 1.5px solid #7AA002; color:#7AA002; font-weight:700; border-radius:50%; width:24px; height:24px; text-align:center; line-height:22px; font-size:12px;">2</div>
             </td>
             <td style="padding: 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:top;">
-              <strong>Paga o valor de ${EVENTO.valor}</strong> através de um destes métodos:
+              <strong>Efetua o pagamento de ${EVENTO.valor}</strong> através de um destes métodos:
               <ul style="margin: 8px 0 0; padding-left: 18px; color:#5a5a5a;">
                 <li>MBWAY (${PAGAMENTO.mbway})</li>
                 <li>Transferência Bancária (${PAGAMENTO.iban})</li>
@@ -80,29 +87,33 @@ export async function sendConfirmationEmail(data: InscricaoInput) {
             </td>
           </tr>
           <tr>
-            <td style="width:24px; padding: 14px 14px 14px 0; vertical-align:top;">
+            <td style="width:24px; padding: 14px 14px 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:middle;">
               <div style="border: 1.5px solid #7AA002; color:#7AA002; font-weight:700; border-radius:50%; width:24px; height:24px; text-align:center; line-height:22px; font-size:12px;">3</div>
             </td>
-            <td style="padding: 14px 0; vertical-align:top;">
+            <td style="padding: 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:middle;">
               Envia o comprovativo ou uma captura de ecrã pelo nosso Whatsapp ou email.
+            </td>
+          </tr>
+          <tr>
+            <td style="width:24px; padding: 14px 14px 14px 0; vertical-align:top;">
+              <div style="border: 1.5px solid #7AA002; color:#7AA002; font-weight:700; border-radius:50%; width:24px; height:24px; text-align:center; line-height:22px; font-size:12px;">4</div>
+            </td>
+            <td style="padding: 14px 0; vertical-align:top;">
+              Aguarda que validemos o pagamento e entremos em contacto contigo para mais novidades.
             </td>
           </tr>
         </table>
 
-        <p style="background:#EAF7EE; color:#2F9E44; border-radius:10px; padding:12px 16px; font-weight:600; text-align:center;">
-          Depois de validarmos o pagamento, entraremos em contacto contigo para mais novidades!
-        </p>
-
-        <p style="color:#5a5a5a; margin: 16px 0 4px;">📅 ${EVENTO.datas}</p>
+        <p style="color:#5a5a5a; margin: 32px 0 4px;">📅 ${EVENTO.datas}</p>
         <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>
 
         <p>Para te preparares, consulta o regulamento:<br />
         <a href="${siteUrl}/regulamento-fire.pdf" style="color:#7AA002; font-weight:600;">Descarregar regulamento (PDF)</a></p>
 
-        <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 20px;">
-          <p style="margin: 4px 0; font-size:14px; color:#5a5a5a;">Whatsapp: <strong>${CONTACTOS.whatsapp}</strong></p>
-          <p style="margin: 4px 0; font-size:14px; color:#5a5a5a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#1F2430;">${CONTACTOS.email}</a></p>
-          <p style="margin: 4px 0; font-size:14px; color:#5a5a5a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#1F2430;">${CONTACTOS.redesSociais}</a></p>
+        <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
         </div>
 
         <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>
@@ -134,6 +145,11 @@ export async function sendCoordinatorNotification(data: InscricaoInput) {
 
   const dataNascimentoPt = new Date(data.dataNascimento).toLocaleDateString("pt-PT");
 
+  const linha = (label: string, value: string) =>
+    value
+      ? `<tr style="border-top:1px solid #f0f0f0;"><td style="padding:6px 0; color:#9a9a9a; width:40%; vertical-align:top;">${escapeHtml(label)}</td><td style="padding:6px 0;">${escapeHtml(value)}</td></tr>`
+      : "";
+
   await resend.emails.send({
     from,
     to: coordinatorEmail,
@@ -150,27 +166,24 @@ export async function sendCoordinatorNotification(data: InscricaoInput) {
             <td style="padding:6px 0; color:#9a9a9a; width:40%;">Nome</td>
             <td style="padding:6px 0; font-weight:600;">${escapeHtml(data.nome)}</td>
           </tr>
-          <tr style="border-top:1px solid #f0f0f0;">
-            <td style="padding:6px 0; color:#9a9a9a;">Data de nascimento</td>
-            <td style="padding:6px 0;">${escapeHtml(dataNascimentoPt)}</td>
-          </tr>
-          <tr style="border-top:1px solid #f0f0f0;">
-            <td style="padding:6px 0; color:#9a9a9a;">Email</td>
-            <td style="padding:6px 0;">${escapeHtml(data.email)}</td>
-          </tr>
-          <tr style="border-top:1px solid #f0f0f0;">
-            <td style="padding:6px 0; color:#9a9a9a;">Contacto</td>
-            <td style="padding:6px 0;">${escapeHtml(data.contacto)}</td>
-          </tr>
-          <tr style="border-top:1px solid #f0f0f0;">
-            <td style="padding:6px 0; color:#9a9a9a;">Contacto de emergência</td>
-            <td style="padding:6px 0;">${escapeHtml(data.contactoEmergencia)}</td>
-          </tr>
+          ${linha("Data de nascimento", dataNascimentoPt)}
+          ${linha("Email", data.email)}
+          ${linha("Contacto", data.contacto)}
+          ${linha("Contacto de emergência", data.contactoEmergencia)}
+          ${linha("Menor de 18", data.menorDe18 === "sim" ? "Sim" : "Não")}
+          ${data.menorDe18 === "sim" ? linha("Responsável", `${data.nomeResponsavel ?? ""} (${data.grauParentesco ?? ""})`) : ""}
+          ${data.menorDe18 === "sim" ? linha("Email do responsável", data.emailResponsavel ?? "") : ""}
+          ${data.menorDe18 === "sim" ? linha("Contacto do responsável", data.contactoResponsavel ?? "") : ""}
+          ${linha("Restrições alimentares", data.restricoesAlimentares ?? "")}
+          ${linha("Restrições na atividade física", data.restricoesAtividadeFisica ?? "")}
+          ${linha("Alergias", data.alergias ?? "")}
+          ${linha("Outros (saúde)", data.outros ?? "")}
+          ${linha("Observações", data.observacoes ?? "")}
         </table>
 
         <table style="width:100%; border-collapse:collapse; margin-top: 20px;">
           <tr>
-            ${sheetUrl ? `<td style="width:50%; padding-right:6px;"><a href="${sheetUrl}" style="display:block; text-align:center; background:#EAF7EE; border-radius:8px; padding:10px 12px; color:#2F9E44; font-weight:600; font-size:13px; text-decoration:none;">Ver na Google Sheet</a></td>` : ""}
+            ${sheetUrl ? `<td style="width:50%; padding-right:6px;"><a href="${sheetUrl}" style="display:block; text-align:center; background:#FDECE6; border-radius:8px; padding:10px 12px; color:#E8633A; font-weight:600; font-size:13px; text-decoration:none;">Ver na Google Sheet</a></td>` : ""}
             <td style="width:50%; padding-left:6px;"><a href="${adminUrl}" style="display:block; text-align:center; background:#F1F7E0; border-radius:8px; padding:10px 12px; color:#7AA002; font-weight:600; font-size:13px; text-decoration:none;">Ver na área de administração</a></td>
           </tr>
         </table>

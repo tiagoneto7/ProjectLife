@@ -4,6 +4,7 @@ import SocialLinks from "@/components/SocialLinks";
 
 const NAV_LINKS = [
   { href: "/", label: "Início" },
+  { href: "/quem-somos", label: "Quem Somos" },
   { href: "/fire", label: "Fire" },
   { href: "/galeria", label: "Galeria" },
 ];
@@ -30,13 +31,10 @@ export default function SiteFooter() {
 
           <div>
             <p className="text-xs uppercase tracking-[0.1em] text-inksoft">Com o apoio de</p>
-            <Image
-              src="/fonte-viva-sponsor.png"
-              alt="Fonte Viva"
-              width={80}
-              height={28}
-              className="mt-3"
-            />
+            <div className="mt-3 flex flex-col gap-2">
+              <Image src="/culligan-logo.png" alt="Culligan" width={80} height={27} className="mt-1" />
+              <Image src="/corl-supply-logo.png" alt="Corl Supply" width={86} height={45} />
+            </div>
           </div>
 
           <div>

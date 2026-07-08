@@ -15,7 +15,7 @@ export default function Home() {
         <p className="mx-auto mt-6 max-w-lg text-[17px] leading-relaxed text-inkmuted">
           Acreditamos no valor de caminhar em comunidade.
           <br />
-          Juntos, com propósito e esperança.
+          Juntos, com fé e propósito.
         </p>
 
         <Link
