@@ -31,10 +31,10 @@ function getSheetsClient() {
   return { sheets: google.sheets({ version: "v4", auth }), sheetId };
 }
 
-export async function appendInscricaoToSheet(data: InscricaoInput) {
+export async function appendInscricaoToSheet(data: InscricaoInput): Promise<number> {
   const { sheets, sheetId } = getSheetsClient();
 
-  await sheets.spreadsheets.values.append({
+  const res = await sheets.spreadsheets.values.append({
     spreadsheetId: sheetId,
     range: SHEET_RANGE,
     valueInputOption: "USER_ENTERED",
@@ -66,6 +66,13 @@ export async function appendInscricaoToSheet(data: InscricaoInput) {
       ],
     },
   });
+
+  const updatedRange = res.data.updates?.updatedRange ?? "";
+  const match = updatedRange.match(/(\d+):/) ?? updatedRange.match(/(\d+)$/);
+  if (!match) {
+    throw new Error(`Não foi possível determinar a linha da inscrição (range: ${updatedRange}).`);
+  }
+  return Number(match[1]);
 }
 
 export async function updateEstado(rowIndex: number, estado: string) {
@@ -105,19 +112,9 @@ export type InscritoRow = {
   estado: string;
 };
 
-/** Lê todas as inscrições da Sheet (sem a linha de cabeçalho). */
-export async function getInscricoes(): Promise<InscritoRow[]> {
-  const { sheets, sheetId } = getSheetsClient();
-
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: sheetId,
-    range: `${SHEET_RANGE.split("!")[0]}!A2:T`,
-  });
-
-  const rows = res.data.values ?? [];
-
-  return rows.map((row, i) => ({
-    rowIndex: i + 2,
+function linhaParaInscrito(row: string[], rowIndex: number): InscritoRow {
+  return {
+    rowIndex,
     data: row[0] ?? "",
     nome: row[1] ?? "",
     dataNascimento: row[2] ?? "",
@@ -138,5 +135,33 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
     consentimentoImagens: row[17] ?? "",
     consentimentoContacto: row[18] ?? "",
     estado: row[19] || "Pendente",
-  }));
+  };
+}
+
+/** Lê todas as inscrições da Sheet (sem a linha de cabeçalho). */
+export async function getInscricoes(): Promise<InscritoRow[]> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: `${SHEET_RANGE.split("!")[0]}!A2:T`,
+  });
+
+  const rows = res.data.values ?? [];
+  return rows.map((row, i) => linhaParaInscrito(row, i + 2));
+}
+
+/** Lê uma única inscrição pelo número da linha na Sheet. */
+export async function getInscricaoPorLinha(rowIndex: number): Promise<InscritoRow | null> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: `Inscrições!A${rowIndex}:T${rowIndex}`,
+  });
+
+  const row = res.data.values?.[0];
+  if (!row) return null;
+
+  return linhaParaInscrito(row, rowIndex);
 }

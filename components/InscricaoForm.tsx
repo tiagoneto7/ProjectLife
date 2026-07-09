@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { inscricaoSchema } from "@/lib/validation";
 
 type Status = "idle" | "submitting" | "success" | "error";
@@ -31,6 +32,7 @@ type FieldName = keyof typeof initialValues;
 type FieldErrors = Partial<Record<FieldName, string>>;
 
 export default function InscricaoForm() {
+  const router = useRouter();
   const [values, setValues] = useState(initialValues);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -80,103 +82,20 @@ export default function InscricaoForm() {
         return;
       }
 
-      setStatus("success");
+      const params = new URLSearchParams({
+        nome: values.nome,
+        email: values.email,
+        rowIndex: String(data.rowIndex),
+      });
+      if (values.menorDe18 === "sim") {
+        params.set("menorDe18", values.menorDe18);
+        if (values.emailResponsavel) params.set("emailResponsavel", values.emailResponsavel);
+      }
+      router.push(`/fire/confirmacao?${params.toString()}`);
     } catch {
       setStatus("error");
       setErrorMessage("Não foi possível ligar ao servidor. Verifica a tua ligação e tenta novamente.");
     }
-  }
-
-  if (status === "success") {
-    return (
-      <div>
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold text-ink">Inscrição confirmada</h2>
-          <p className="mt-3 text-inkmuted">
-            Enviámos um email de confirmação para <strong className="text-ink">{values.email}</strong>.
-          </p>
-          {values.menorDe18 === "sim" &&
-            values.emailResponsavel &&
-            values.emailResponsavel.toLowerCase() !== values.email.toLowerCase() && (
-              <p className="mt-1 text-xs text-inksoft">
-                Com cópia para {values.emailResponsavel}
-              </p>
-            )}
-        </div>
-
-        <hr className="my-6 border-line" />
-
-        <p className="mb-4 text-xs text-inksoft">
-          Para que a tua inscrição seja validada, é importante que sigas estes passos:
-        </p>
-
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-widest text-branddark">
-          Passos a seguir
-        </h3>
-
-        <div className="flex gap-3.5">
-          <StepNumber>1</StepNumber>
-          <div className="flex-1 pt-0.5">
-            <p>
-              Efetua o pagamento de <strong>35€</strong> através de um destes métodos:
-            </p>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
-              <PaymentOption label="MBWAY" value="+351 937780027" />
-              <PaymentOption label="Transferência Bancária" value="PT50001800036195088702043" />
-              <PaymentOption label="Pagamento em mãos" />
-            </ul>
-
-            {/* Pagamento MB WAY direto — descomentar quando a integração (IfthenPay) estiver pronta.
-            <div className="mt-2.5 rounded-xl border border-brand/40 bg-brand/10 p-4">
-              <label htmlFor="mbwayContacto" className="text-sm text-inkmuted">
-                Indica o teu contacto MB WAY para efetuares o pagamento
-              </label>
-              <input
-                id="mbwayContacto"
-                type="tel"
-                inputMode="numeric"
-                defaultValue={values.contacto}
-                placeholder="9XXXXXXXX"
-                className={`${inputClass} mt-2`}
-              />
-              <button
-                type="button"
-                disabled
-                title="Brevemente disponível"
-                className="mt-2.5 w-full cursor-not-allowed rounded-lg bg-brand px-4 py-2.5 font-semibold text-brandink opacity-50"
-              >
-                Pagar 35€ com MB WAY
-              </button>
-              <p className="mt-2 text-center text-xs text-inksoft">Brevemente disponível.</p>
-            </div>
-            */}
-          </div>
-        </div>
-
-        <div className="mt-[18px] flex gap-3.5">
-          <StepNumber>2</StepNumber>
-          <p className="flex-1 pt-0.5">
-            Se pagares por transferência ou em mãos, envia o comprovativo para o nosso Whatsapp ou email.
-          </p>
-        </div>
-
-        <div className="mt-[18px] flex gap-3.5">
-          <StepNumber>3</StepNumber>
-          <p className="flex-1 pt-0.5">
-            Aguarda que validemos o pagamento e entremos em contacto contigo para mais novidades.
-          </p>
-        </div>
-
-        <p className="mt-10 text-center text-xs text-inksoft">Para te preparares, consulta o regulamento:</p>
-        <a
-          href="/regulamento-fire.pdf"
-          download
-          className="mt-1 block text-center text-sm font-medium text-branddark hover:underline"
-        >
-          Descarregar regulamento (PDF)
-        </a>
-      </div>
-    );
   }
 
   return (
@@ -518,20 +437,3 @@ function ConsentCheckbox({
 
 const inputClass =
   "w-full rounded-lg border border-line bg-surface px-4 py-3 text-ink placeholder:text-inksoft outline-none transition focus:border-brand";
-
-function StepNumber({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex h-6 w-6 flex-none items-center justify-center rounded-full border-[1.5px] border-branddark text-xs font-bold text-branddark">
-      {children}
-    </div>
-  );
-}
-
-function PaymentOption({ label, value }: { label: string; value?: string }) {
-  return (
-    <li className="break-words text-sm text-inkmuted">
-      {label}
-      {value && <span className="font-medium text-ink"> — {value}</span>}
-    </li>
-  );
-}

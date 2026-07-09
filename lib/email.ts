@@ -108,7 +108,7 @@ export async function sendConfirmationEmail(data: InscricaoInput) {
         <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>
 
         <p>Para te preparares, consulta o regulamento:<br />
-        <a href="${siteUrl}/regulamento-fire.pdf" style="color:#7AA002; font-weight:600;">Descarregar regulamento (PDF)</a></p>
+        <a href="${siteUrl}/regulamento-fire.pdf" style="color:#7AA002; font-weight:600;">Regulamento (PDF)</a></p>
 
         <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
@@ -179,6 +179,130 @@ export async function sendCoordinatorNotification(data: InscricaoInput) {
           ${linha("Alergias", data.alergias ?? "")}
           ${linha("Outros (saúde)", data.outros ?? "")}
           ${linha("Observações", data.observacoes ?? "")}
+        </table>
+
+        <table style="width:100%; border-collapse:collapse; margin-top: 20px;">
+          <tr>
+            ${sheetUrl ? `<td style="width:50%; padding-right:6px;"><a href="${sheetUrl}" style="display:block; text-align:center; background:#FDECE6; border-radius:8px; padding:10px 12px; color:#E8633A; font-weight:600; font-size:13px; text-decoration:none;">Ver na Google Sheet</a></td>` : ""}
+            <td style="width:50%; padding-left:6px;"><a href="${adminUrl}" style="display:block; text-align:center; background:#F1F7E0; border-radius:8px; padding:10px 12px; color:#7AA002; font-weight:600; font-size:13px; text-decoration:none;">Ver na área de administração</a></td>
+          </tr>
+        </table>
+
+      </div>
+    `,
+  });
+}
+
+type PagamentoConfirmadoData = {
+  nome: string;
+  email: string;
+  contacto: string;
+  menorDe18: string;
+  nomeResponsavel: string;
+  contactoResponsavel: string;
+};
+
+/**
+ * Envia ao inscrito a confirmação de que o pagamento foi validado.
+ * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
+ */
+export async function sendPaymentConfirmationEmail(data: PagamentoConfirmadoData) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.FROM_EMAIL;
+
+  if (!apiKey || !from) {
+    throw new Error("Variáveis de ambiente de email em falta (RESEND_API_KEY / FROM_EMAIL).");
+  }
+
+  const resend = new Resend(apiKey);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  await resend.emails.send({
+    from,
+    to: data.email,
+    subject: "Inscrição Fire validada",
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
+
+        <table style="border-collapse:collapse; margin: 8px 0 24px;">
+          <tr>
+            <td style="padding-right:16px; vertical-align:middle;">
+              <img src="${siteUrl}/fire-logo.webp" alt="Fire" width="96" height="96" style="border-radius:50%; display:block;" />
+            </td>
+            <td style="vertical-align:middle;">
+              <h1 style="margin:0; font-size: 24px; color:#1F2430;">Inscrição validada</h1>
+            </td>
+          </tr>
+        </table>
+
+        <p>Olá, <strong>${escapeHtml(data.nome)}</strong>,</p>
+        <p style="color:#5a5a5a;">Confirmamos que recebemos o teu pagamento de ${EVENTO.valor}.</p>
+        <p style="color:#5a5a5a;">A tua inscrição no Fire está validada — Até já!</p>
+
+        <p style="color:#5a5a5a; margin: 24px 0 4px;">📅 ${EVENTO.datas}</p>
+        <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>
+
+        <p>Para te preparares, consulta o regulamento:<br />
+        <a href="${siteUrl}/regulamento-fire.pdf" style="color:#7AA002; font-weight:600;">Regulamento (PDF)</a></p>
+
+        <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
+        </div>
+
+        <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>
+      </div>
+    `,
+  });
+}
+
+/**
+ * Notifica o coordenador de que um pagamento foi validado, com os dados mínimos do inscrito.
+ * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL, COORDINATOR_EMAIL, GOOGLE_SHEET_ID
+ */
+export async function sendCoordinatorPaymentNotification(data: PagamentoConfirmadoData) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.FROM_EMAIL;
+  const coordinatorEmail = process.env.COORDINATOR_EMAIL;
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+
+  if (!apiKey || !from || !coordinatorEmail) {
+    throw new Error(
+      "Variáveis de ambiente de email em falta (RESEND_API_KEY / FROM_EMAIL / COORDINATOR_EMAIL)."
+    );
+  }
+
+  const resend = new Resend(apiKey);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const sheetUrl = sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}/edit` : null;
+  const adminUrl = `${siteUrl}/admin`;
+
+  const linha = (label: string, value: string) =>
+    value
+      ? `<tr style="border-top:1px solid #f0f0f0;"><td style="padding:6px 0; color:#9a9a9a; width:40%; vertical-align:top;">${escapeHtml(label)}</td><td style="padding:6px 0;">${escapeHtml(value)}</td></tr>`
+      : "";
+
+  await resend.emails.send({
+    from,
+    to: coordinatorEmail,
+    subject: `Pagamento confirmado — ${data.nome}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
+
+        <div style="padding: 4px 0 20px;">
+          <h1 style="margin:0; font-size: 20px; color:#7AA002;">Pagamento confirmado</h1>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; font-size:14px;">
+          <tr>
+            <td style="padding:6px 0; color:#9a9a9a; width:40%;">Nome</td>
+            <td style="padding:6px 0; font-weight:600;">${escapeHtml(data.nome)}</td>
+          </tr>
+          ${linha("Email", data.email)}
+          ${linha("Contacto", data.contacto)}
+          ${data.menorDe18 === "Sim" ? linha("Responsável", data.nomeResponsavel) : ""}
+          ${data.menorDe18 === "Sim" ? linha("Contacto do responsável", data.contactoResponsavel) : ""}
         </table>
 
         <table style="width:100%; border-collapse:collapse; margin-top: 20px;">

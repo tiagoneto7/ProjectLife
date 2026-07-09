@@ -22,8 +22,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  let rowIndex: number;
   try {
-    await appendInscricaoToSheet(parsed.data);
+    rowIndex = await appendInscricaoToSheet(parsed.data);
   } catch (err) {
     console.error("Erro ao escrever na Google Sheet:", err);
     return NextResponse.json(
@@ -46,5 +47,5 @@ export async function POST(req: NextRequest) {
     console.error("Erro ao enviar notificação ao coordenador:", err);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, rowIndex });
 }

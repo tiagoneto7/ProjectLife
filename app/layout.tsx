@@ -18,7 +18,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Project Life",
-  description: "Associação Project Life — campo Fire e mais.",
+  description: "Associação Project Life — Fire Campus e mais.",
 };
 
 export default function RootLayout({
