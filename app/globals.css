@@ -29,3 +29,19 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* iOS/Safari renderiza o valor de <input type="date"> com um tamanho de letra
+   próprio do sistema que ignora o CSS herdado, ficando desproporcional. */
+input[type="date"] {
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  font-size: 1rem;
+  text-align: left;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  font-size: 1rem;
+}
