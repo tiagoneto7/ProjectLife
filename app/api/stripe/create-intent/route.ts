@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       amount: VALOR_FIRE_CENTIMOS,
       currency: "eur",
       payment_method_types: ["mb_way", "card"],
+      receipt_email: email,
       description: `Inscrição Fire — ${nome}`,
       metadata: { rowIndex: String(rowIndex), email, nome },
     });
