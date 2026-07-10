@@ -30,9 +30,16 @@ body {
   }
 }
 
-/* iOS/Safari renderiza o valor de <input type="date"> com um tamanho de letra
-   próprio do sistema que ignora o CSS herdado, ficando desproporcional. */
+/* iOS/Safari trata <input type="date"> como um elemento substituído com
+   largura intrínseca própria, que ignora width:100% e o tamanho de letra
+   herdado — por isso precisa destes resets explícitos para não sair da caixa. */
 input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   font-size: 1rem;
   line-height: 1.5rem;
 }
@@ -40,8 +47,17 @@ input[type="date"] {
 input[type="date"]::-webkit-date-and-time-value {
   font-size: 1rem;
   text-align: left;
+  min-width: 0;
 }
 
 input[type="date"]::-webkit-datetime-edit {
   font-size: 1rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  min-width: 0;
+  max-width: 100%;
 }
