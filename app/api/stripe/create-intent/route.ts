@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeClient } from "@/lib/stripe";
 
-// TEMPORÁRIO: a cobrar só 0,50€ (mínimo permitido pela Stripe em EUR) para testar em produção.
-// Repor para 3500 (35€) antes de lançar a sério.
-const VALOR_FIRE_CENTIMOS = 50;
+const VALOR_FIRE_CENTIMOS = 3500;
 
 export async function POST(req: NextRequest) {
   const { rowIndex, email, nome } = await req.json().catch(() => ({}));
@@ -18,7 +16,6 @@ export async function POST(req: NextRequest) {
       amount: VALOR_FIRE_CENTIMOS,
       currency: "eur",
       payment_method_types: ["mb_way", "card"],
-      receipt_email: email,
       description: `Inscrição Fire — ${nome}`,
       metadata: { rowIndex: String(rowIndex), email, nome },
     });
