@@ -37,7 +37,7 @@ export async function appendInscricaoToSheet(data: InscricaoInput): Promise<numb
   const res = await sheets.spreadsheets.values.append({
     spreadsheetId: sheetId,
     range: SHEET_RANGE,
-    valueInputOption: "USER_ENTERED",
+    valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: {
       values: [
@@ -81,7 +81,7 @@ export async function updateEstado(rowIndex: number, estado: string) {
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
     range: `Inscrições!T${rowIndex}`,
-    valueInputOption: "USER_ENTERED",
+    valueInputOption: "RAW",
     requestBody: {
       values: [[estado]],
     },

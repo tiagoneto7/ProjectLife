@@ -7,6 +7,21 @@ import AdminEstadoEditor from "@/components/AdminEstadoEditor";
 
 export const dynamic = "force-dynamic";
 
+function formatarDataNascimento(valor: string): string {
+  if (!valor) return "—";
+
+  // Linhas antigas: a Sheet converteu a data para o número de série (dias desde 30/12/1899).
+  if (/^\d+(\.\d+)?$/.test(valor)) {
+    const dataBase = Date.UTC(1899, 11, 30);
+    const data = new Date(dataBase + Number(valor) * 86400000);
+    return data.toLocaleDateString("pt-PT", { timeZone: "UTC" });
+  }
+
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return valor;
+  return data.toLocaleDateString("pt-PT", { timeZone: "UTC" });
+}
+
 function DetailsCell({ items }: { items: { label: string; value: string }[] }) {
   const filled = items.filter((i) => i.value);
   if (filled.length === 0) return <span className="text-inksoft">—</span>;
@@ -87,7 +102,7 @@ export default async function AdminPage() {
                     })}
                   </td>
                   <td className="p-2">{inscrito.nome}</td>
-                  <td className="p-2">{inscrito.dataNascimento}</td>
+                  <td className="p-2">{formatarDataNascimento(inscrito.dataNascimento)}</td>
                   <td className="p-2">{inscrito.email}</td>
                   <td className="p-2">{inscrito.contacto}</td>
                   <td className="p-2">{inscrito.contactoEmergencia}</td>
