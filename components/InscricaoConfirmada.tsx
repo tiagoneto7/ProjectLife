@@ -92,15 +92,6 @@ export default function InscricaoConfirmada({
           </div>
         </>
       )}
-
-      <p className="mt-10 text-center text-xs text-inksoft">Para te preparares, consulta o regulamento:</p>
-      <a
-        href="/regulamento-fire.pdf"
-        download
-        className="mt-1 block text-center text-sm font-medium text-branddark hover:underline"
-      >
-        Regulamento (PDF)
-      </a>
     </div>
   );
 }

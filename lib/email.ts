@@ -107,9 +107,6 @@ export async function sendConfirmationEmail(data: InscricaoInput) {
         <p style="color:#5a5a5a; margin: 32px 0 4px;">📅 ${EVENTO.datas}</p>
         <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>
 
-        <p>Para te preparares, consulta o regulamento:<br />
-        <a href="${siteUrl}/regulamento-fire.pdf" style="color:#7AA002; font-weight:600;">Regulamento (PDF)</a></p>
-
         <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
@@ -242,9 +239,6 @@ export async function sendPaymentConfirmationEmail(data: PagamentoConfirmadoData
         <p style="color:#5a5a5a; margin: 24px 0 4px;">📅 ${EVENTO.datas}</p>
         <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>
 
-        <p>Para te preparares, consulta o regulamento:<br />
-        <a href="${siteUrl}/regulamento-fire.pdf" style="color:#7AA002; font-weight:600;">Regulamento (PDF)</a></p>
-
         <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
@@ -315,6 +309,70 @@ export async function sendCoordinatorPaymentNotification(data: PagamentoConfirma
       </div>
     `,
   });
+}
+
+/**
+ * Envia o email com as informações finais do FIRE (check-in/check-out, local, checklist)
+ * aos inscritos validados. Usa o batch send do Resend — cada pessoa recebe o email
+ * individualmente, sem ver os outros destinatários.
+ * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
+ */
+export async function sendDocumentosFinais(emails: string[]) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.FROM_EMAIL;
+
+  if (!apiKey || !from) {
+    throw new Error("Variáveis de ambiente de email em falta (RESEND_API_KEY / FROM_EMAIL).");
+  }
+  if (emails.length === 0) return;
+
+  const resend = new Resend(apiKey);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
+
+        <table style="border-collapse:collapse; margin: 8px 0 24px;">
+          <tr>
+            <td style="padding-right:16px; vertical-align:middle;">
+              <img src="${siteUrl}/fire-logo.webp" alt="Fire" width="96" height="96" style="border-radius:50%; display:block;" />
+            </td>
+            <td style="vertical-align:middle;">
+              <h1 style="margin:0; font-size: 24px; color:#1F2430;">Informações do FIRE 2026</h1>
+            </td>
+          </tr>
+        </table>
+
+        <p style="color:#5a5a5a;">É com grande entusiasmo que te damos as boas-vindas ao FIRE 2026!</p>
+        <p style="color:#5a5a5a;">Prepara-te para uma experiência inesquecível, repleta de aventura, diversão, novas amizades e momentos que vão ficar na memória!</p>
+        <p style="color:#5a5a5a;">Este ano, temos muitas novidades preparadas para ti e queremos garantir que chegas ao FIRE com tudo o que precisas saber. Por isso, reunimos aqui as informações essenciais.</p>
+
+        <p style="color:#5a5a5a; margin: 20px 0 4px;">📅 Check-in — 11.09.2026, pelas 16h30</p>
+        <p style="color:#5a5a5a; margin: 0 0 4px;">📍 FIRE campus — Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão</p>
+        <p style="color:#5a5a5a; margin: 0 0 20px;">📅 Check-out — 13.09.2026, pelas 16h00</p>
+
+        <p style="color:#5a5a5a;">O teu monitor irá entrar em contacto contigo, pelo WhatsApp, durante os próximos dias, para combinar todos os pormenores e responder a qualquer questão que possas ter.<br />Fica atento às mensagens!</p>
+        <p style="color:#5a5a5a;">Se tiveres alguma dúvida ou pergunta, não hesites em contactar-nos.</p>
+
+        <p style="color:#5a5a5a; margin-top:20px;">Até breve,<br />Equipa FIRE 2026</p>
+
+        <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
+        </div>
+
+        <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>
+      </div>
+    `;
+
+  const subject = "FIRE 2026 — Informações finais";
+
+  // Resend só aceita até 100 emails por chamada ao batch send.
+  for (let i = 0; i < emails.length; i += 100) {
+    const lote = emails.slice(i, i + 100);
+    await resend.batch.send(lote.map((to) => ({ from, to, subject, html })));
+  }
 }
 
 function escapeHtml(value: string) {

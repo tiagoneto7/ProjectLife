@@ -4,6 +4,8 @@ import { getInscricoes } from "@/lib/sheets";
 import AdminLoginForm from "@/components/AdminLoginForm";
 import AdminLogoutButton from "@/components/AdminLogoutButton";
 import AdminEstadoEditor from "@/components/AdminEstadoEditor";
+import AdminEnviarDocs from "@/components/AdminEnviarDocs";
+import AdminRestricoes from "@/components/AdminRestricoes";
 
 export const dynamic = "force-dynamic";
 
@@ -50,15 +52,39 @@ export default async function AdminPage() {
   }
 
   const inscritos = await getInscricoes();
-  const validados = inscritos.filter((i) => i.estado.toLowerCase() === "pago").length;
+  const validadosList = inscritos.filter((i) => i.estado.toLowerCase() === "pago");
+  const validados = validadosList.length;
+
+  const destinatariosDocs = validadosList.map((i) => {
+    const emails = [i.email];
+    if (i.menorDe18 === "Sim" && i.emailResponsavel) emails.push(i.emailResponsavel);
+    return { nome: i.nome, emails };
+  });
+
+  const semRestricao = ["nada", "nenhum", "nenhuma"];
+  const temRestricao = (texto: string) =>
+    texto && !semRestricao.includes(texto.trim().toLowerCase());
+
+  const restricoesFisicas = inscritos
+    .filter((i) => temRestricao(i.restricoesAtividadeFisica))
+    .map((i) => ({ nome: i.nome, texto: i.restricoesAtividadeFisica }));
+
+  const restricoesAlimentares = inscritos
+    .filter((i) => temRestricao(i.restricoesAlimentares))
+    .map((i) => ({ nome: i.nome, texto: i.restricoesAlimentares }));
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="mb-10 flex items-center justify-between">
+    <div className="mx-auto max-w-7xl px-3 py-10">
+      <div className="mb-10 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">
           Inscritos ({inscritos.length}) · Validados ({validados})
         </h1>
-        <AdminLogoutButton />
+        <div className="flex flex-wrap items-center gap-2">
+          <AdminRestricoes titulo="Restrições Físicas" itens={restricoesFisicas} />
+          <AdminRestricoes titulo="Restrições Alimentares" itens={restricoesAlimentares} />
+          <AdminEnviarDocs destinatarios={destinatariosDocs} />
+          <AdminLogoutButton />
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -96,10 +122,13 @@ export default async function AdminPage() {
               return (
                 <tr key={inscrito.rowIndex} className="border-b">
                   <td className="p-2">
-                    {new Date(inscrito.data).toLocaleString("pt-PT", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
+                    <div>{new Date(inscrito.data).toLocaleDateString("pt-PT")}</div>
+                    <div className="text-inksoft">
+                      {new Date(inscrito.data).toLocaleTimeString("pt-PT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
                   </td>
                   <td className="p-2">{inscrito.nome}</td>
                   <td className="p-2">{formatarDataNascimento(inscrito.dataNascimento)}</td>
