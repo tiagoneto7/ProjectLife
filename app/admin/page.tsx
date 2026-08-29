@@ -73,6 +73,10 @@ export default async function AdminPage() {
     .filter((i) => temRestricao(i.restricoesAlimentares))
     .map((i) => ({ nome: i.nome, texto: i.restricoesAlimentares }));
 
+  const alergias = inscritos
+    .filter((i) => temRestricao(i.alergias))
+    .map((i) => ({ nome: i.nome, texto: i.alergias }));
+
   return (
     <div className="mx-auto max-w-7xl px-3 py-10">
       <div className="mb-10 flex flex-wrap items-center justify-between gap-3">
@@ -82,6 +86,7 @@ export default async function AdminPage() {
         <div className="flex flex-wrap items-center gap-2">
           <AdminRestricoes titulo="Restrições Físicas" itens={restricoesFisicas} />
           <AdminRestricoes titulo="Restrições Alimentares" itens={restricoesAlimentares} />
+          <AdminRestricoes titulo="Alergias" itens={alergias} />
           <AdminEnviarDocs destinatarios={destinatariosDocs} />
           <AdminLogoutButton />
         </div>
