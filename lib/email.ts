@@ -345,7 +345,7 @@ export async function sendDocumentosFinais(emails: string[]) {
 
         <p style="color:#5a5a5a;">É com grande entusiasmo que te damos as boas-vindas ao FIRE 2026!</p>
         <p style="color:#5a5a5a;">Prepara-te para uma experiência inesquecível, repleta de aventura, diversão, novas amizades e momentos que vão ficar na memória!</p>
-        <p style="color:#5a5a5a;">Este ano, temos muitas novidades preparadas para ti e queremos garantir que chegas ao FIRE com tudo o que precisas saber. Por isso, reunimos aqui as informações essenciais.</p>
+        <p style="color:#5a5a5a;">Este ano, temos muitas novidades preparadas para ti e queremos garantir que chegas ao FIRE com tudo o que precisas de saber. Por isso, reunimos aqui as informações essenciais.</p>
 
         <p style="color:#5a5a5a; margin: 20px 0 4px;">📅 Check-in — 11.09.2026, pelas 16h30</p>
         <p style="color:#5a5a5a; margin: 0 0 4px;">📍 FIRE campus — Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão</p>

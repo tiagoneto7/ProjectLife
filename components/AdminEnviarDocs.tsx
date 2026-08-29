@@ -92,8 +92,7 @@ export default function AdminEnviarDocs({ destinatarios }: { destinatarios: Dest
             {resultado ? (
               <>
                 <p className="mt-3 text-sm text-branddark">
-                  Enviado para {resultado.enviadoPara.join(", ")} (lista real teria{" "}
-                  {resultado.totalReal} destinatários).
+                  Email enviado para {resultado.totalReal} destinatários.
                 </p>
                 <div className="mt-4 flex justify-end">
                   <button

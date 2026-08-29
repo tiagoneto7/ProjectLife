@@ -4,10 +4,6 @@ import { ADMIN_SESSION_COOKIE, checkAdminPassword, isValidAdminSession } from "@
 import { getInscricoes } from "@/lib/sheets";
 import { sendDocumentosFinais } from "@/lib/email";
 
-// TEMPORÁRIO: enquanto testamos o conteúdo do email, envia sempre só para este endereço,
-// independentemente da lista real de inscritos validados. Remover antes de enviar a sério.
-const EMAIL_DE_TESTE = "tineto@sapo.pt";
-
 export async function POST(req: NextRequest) {
   const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
   if (!isValidAdminSession(token)) {
@@ -32,12 +28,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await sendDocumentosFinais([EMAIL_DE_TESTE]);
+    const destinatarios = Array.from(emailsReais);
+    await sendDocumentosFinais(destinatarios);
 
     return NextResponse.json({
       ok: true,
-      totalReal: emailsReais.size,
-      enviadoPara: [EMAIL_DE_TESTE],
+      totalReal: destinatarios.length,
+      enviadoPara: destinatarios,
     });
   } catch (err) {
     console.error("Erro ao enviar documentos finais:", err);
