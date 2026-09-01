@@ -366,7 +366,7 @@ export async function sendDocumentosFinais(emails: string[]) {
       </div>
     `;
 
-  const subject = "FIRE 2026 — Informações finais";
+  const subject = "FIRE 2026 — Informações";
 
   // Resend só aceita até 100 emails por chamada ao batch send.
   for (let i = 0; i < emails.length; i += 100) {
