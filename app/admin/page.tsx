@@ -79,17 +79,17 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-3 py-10">
-      <div className="mb-10 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">
           Inscritos ({inscritos.length}) · Validados ({validados})
         </h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <AdminRestricoes titulo="Restrições Físicas" itens={restricoesFisicas} />
-          <AdminRestricoes titulo="Restrições Alimentares" itens={restricoesAlimentares} />
-          <AdminRestricoes titulo="Alergias" itens={alergias} />
-          <AdminEnviarDocs destinatarios={destinatariosDocs} />
-          <AdminLogoutButton />
-        </div>
+        <AdminLogoutButton />
+      </div>
+      <div className="mb-10 flex flex-wrap items-center gap-2">
+        <AdminRestricoes titulo="Restrições Físicas" itens={restricoesFisicas} />
+        <AdminRestricoes titulo="Restrições Alimentares" itens={restricoesAlimentares} />
+        <AdminRestricoes titulo="Alergias" itens={alergias} />
+        <AdminEnviarDocs destinatarios={destinatariosDocs} />
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
