@@ -30,7 +30,7 @@ npm install
 
 ## 2. Configurar a Google Sheet
 
-1. Cria uma Google Sheet nova, com uma aba chamada **"Inscrições"** e a primeira linha com cabeçalhos: `Data | Nome | Data de Nascimento | Email | Contacto | Contacto Emergência | Restrições Alimentares | Restrições na Atividade Física | Alergias | Outros | Menor de 18 | Nome do Responsável | Grau de Parentesco | Email do Responsável | Contacto do Responsável | Observações | Consentimento Dados | Consentimento Imagens | Consentimento Contacto | Estado`.
+1. Cria uma Google Sheet nova, com uma aba chamada **"Inscrições"** e a primeira linha com cabeçalhos: `Data | Nome | Data de Nascimento | Email | Contacto | Contacto de Emergência | Restrições Alimentares | Restrições na Atividade Física | Alergias | Outros | Menor de 18 | Nome do Responsável | Grau de Parentesco | Email do Responsável | Contacto do Responsável | Observações | Consentimento Dados | Consentimento Imagens | Consentimento Contacto | Estado`.
 2. Vai a [console.cloud.google.com](https://console.cloud.google.com), cria um projeto (ou usa um existente).
 3. Ativa a **Google Sheets API** (menu "APIs & Services" → "Enable APIs").
 4. Cria uma **Service Account** ("APIs & Services" → "Credentials" → "Create Credentials" → "Service Account").
@@ -73,7 +73,11 @@ A coluna **Estado** (`Pendente`/`Pago`) é escrita automaticamente como "Pendent
 Para o construtor de equipas (botão "Equipas" no `/admin`), a Google Sheet precisa de mais dois ajustes:
 
 1. Cria uma aba nova chamada **"Equipas"**, com cabeçalho `ID | Nome | Cor` (colunas A, B, C).
-2. Na aba **"Inscrições"**, adiciona um cabeçalho na coluna **U** (ex: `EquipaId`) — é onde fica guardada a equipa de cada inscrito.
+2. Na aba **"Inscrições"**, adiciona um cabeçalho na coluna **V** (ex: `EquipaId`) — é onde fica guardada a equipa de cada inscrito.
+
+### Origem do pagamento
+
+Para saber se um pagamento foi validado automaticamente (Stripe/MB WAY) ou marcado manualmente no `/admin`, adiciona mais um cabeçalho na aba **"Inscrições"**, na coluna **U** (ex: `OrigemPagamento`). Fica com `Automático` ou `Manual`, consoante o caso — e aparece como "(auto)"/"(manual)" ao lado do Estado no `/admin`.
 
 ## Regulamento (PDF) para download
 

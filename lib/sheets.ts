@@ -75,22 +75,28 @@ export async function appendInscricaoToSheet(data: InscricaoInput): Promise<numb
   return Number(match[1]);
 }
 
-export async function updateEstado(rowIndex: number, estado: string) {
+/**
+ * Origem do pagamento, guardada na coluna U da aba "Inscrições":
+ * "Automático" quando vem do webhook do Stripe, "Manual" quando um admin
+ * marca o Estado como Pago à mão. Vazia quando o Estado é Pendente.
+ */
+export async function updateEstado(rowIndex: number, estado: string, origemPagamento?: string) {
   const { sheets, sheetId } = getSheetsClient();
 
-  await sheets.spreadsheets.values.update({
+  const data = [{ range: `Inscrições!T${rowIndex}`, values: [[estado]] }];
+  if (origemPagamento !== undefined) {
+    data.push({ range: `Inscrições!U${rowIndex}`, values: [[origemPagamento]] });
+  }
+
+  await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: sheetId,
-    range: `Inscrições!T${rowIndex}`,
-    valueInputOption: "RAW",
-    requestBody: {
-      values: [[estado]],
-    },
+    requestBody: { valueInputOption: "RAW", data },
   });
 }
 
 /**
  * Equipas: guardadas numa aba própria "Equipas" (colunas A=ID, B=Nome, C=Cor).
- * A equipa de cada inscrito é guardada na coluna U da aba "Inscrições".
+ * A equipa de cada inscrito é guardada na coluna V da aba "Inscrições".
  *
  * Configuração adicional necessária (ver README.md):
  * 4. Criar uma aba chamada "Equipas" na mesma Sheet, com cabeçalho ID / Nome / Cor.
@@ -177,7 +183,7 @@ export async function eliminarEquipa(id: string) {
       requestBody: {
         valueInputOption: "RAW",
         data: afetados.map((i) => ({
-          range: `Inscrições!U${i.rowIndex}`,
+          range: `Inscrições!V${i.rowIndex}`,
           values: [[""]],
         })),
       },
@@ -196,7 +202,7 @@ export async function atualizarEquipaInscrito(rowIndex: number, equipaId: string
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
-    range: `Inscrições!U${rowIndex}`,
+    range: `Inscrições!V${rowIndex}`,
     valueInputOption: "RAW",
     requestBody: { values: [[equipaId]] },
   });
@@ -225,6 +231,7 @@ export type InscritoRow = {
   consentimentoContacto: string;
   estado: string;
   equipaId: string;
+  origemPagamento: string;
 };
 
 function linhaParaInscrito(row: string[], rowIndex: number): InscritoRow {
@@ -250,7 +257,8 @@ function linhaParaInscrito(row: string[], rowIndex: number): InscritoRow {
     consentimentoImagens: row[17] ?? "",
     consentimentoContacto: row[18] ?? "",
     estado: row[19] || "Pendente",
-    equipaId: row[20] ?? "",
+    origemPagamento: row[20] ?? "",
+    equipaId: row[21] ?? "",
   };
 }
 
@@ -260,7 +268,7 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEET_RANGE.split("!")[0]}!A2:U`,
+    range: `${SHEET_RANGE.split("!")[0]}!A2:V`,
   });
 
   const rows = res.data.values ?? [];
@@ -273,7 +281,7 @@ export async function getInscricaoPorLinha(rowIndex: number): Promise<InscritoRo
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `Inscrições!A${rowIndex}:U${rowIndex}`,
+    range: `Inscrições!A${rowIndex}:V${rowIndex}`,
   });
 
   const row = res.data.values?.[0];

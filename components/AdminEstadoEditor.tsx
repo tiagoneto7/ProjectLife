@@ -7,12 +7,15 @@ import { useCloseOnEscape } from "@/lib/useCloseOnEscape";
 export default function AdminEstadoEditor({
   rowIndex,
   initialEstado,
+  initialOrigem,
 }: {
   rowIndex: number;
   initialEstado: string;
+  initialOrigem: string;
 }) {
   const router = useRouter();
   const [estado, setEstado] = useState(initialEstado);
+  const [origem, setOrigem] = useState(initialOrigem);
   const [open, setOpen] = useState(false);
   const [draftPago, setDraftPago] = useState(initialEstado.toLowerCase() === "pago");
   const [password, setPassword] = useState("");
@@ -66,6 +69,7 @@ export default function AdminEstadoEditor({
     }
 
     setEstado(novoEstado);
+    setOrigem(novoEstado.toLowerCase() === "pago" ? "Manual" : "");
     fechar();
     router.refresh();
   }
@@ -82,6 +86,9 @@ export default function AdminEstadoEditor({
           {isPago ? "✅" : "⚠️"}
         </span>
         <span>{estado}</span>
+        {isPago && origem === "Automático" && (
+          <span className="text-[10px] text-inksoft/70">(auto)</span>
+        )}
       </button>
 
       {open && (

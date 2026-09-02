@@ -156,9 +156,8 @@ export default function AdminTabelaInscritos({
               <th className="p-2">Data Nasc.</th>
               <th className="p-2">Email</th>
               <th className="p-2">Contacto</th>
-              <th className="p-2">Contacto Emergência</th>
+              <th className="whitespace-nowrap p-2">C. de Emergência</th>
               <th className="p-2">Menor 18</th>
-              <th className="p-2">Responsável</th>
               <th className="p-2">Saúde</th>
               <th className="p-2">Observações</th>
               <th className="p-2">Estado</th>
@@ -201,12 +200,13 @@ export default function AdminTabelaInscritos({
                   <td className="p-2">{inscrito.email}</td>
                   <td className="p-2">{inscrito.contacto}</td>
                   <td className="p-2">{inscrito.contactoEmergencia}</td>
-                  <td className="p-2">{inscrito.menorDe18 || "—"}</td>
                   <td className="p-2">
                     {inscrito.menorDe18 === "Sim" ? (
-                      <DetailsCell items={responsavelItems} />
+                      <span className="flex items-center gap-1.5 whitespace-nowrap">
+                        Sim · <DetailsCell items={responsavelItems} />
+                      </span>
                     ) : (
-                      <span className="text-inksoft">—</span>
+                      inscrito.menorDe18 || "—"
                     )}
                   </td>
                   <td className="p-2">
@@ -216,7 +216,11 @@ export default function AdminTabelaInscritos({
                     <TextoCell texto={inscrito.observacoes} />
                   </td>
                   <td className="p-2">
-                    <AdminEstadoEditor rowIndex={inscrito.rowIndex} initialEstado={inscrito.estado} />
+                    <AdminEstadoEditor
+                      rowIndex={inscrito.rowIndex}
+                      initialEstado={inscrito.estado}
+                      initialOrigem={inscrito.origemPagamento}
+                    />
                   </td>
                 </tr>
               );

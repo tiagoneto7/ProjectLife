@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     if (rowIndex) {
       try {
-        await updateEstado(rowIndex, "Pago");
+        await updateEstado(rowIndex, "Pago", "Automático");
       } catch (err) {
         console.error("Erro ao marcar Estado como Pago na Sheet:", err);
       }

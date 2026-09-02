@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await updateEstado(rowIndex, estado);
+    await updateEstado(rowIndex, estado, estado.toLowerCase() === "pago" ? "Manual" : "");
   } catch (err) {
     console.error("Erro ao atualizar estado na Google Sheet:", err);
     return NextResponse.json({ error: "Não foi possível guardar. Tenta novamente." }, { status: 500 });
