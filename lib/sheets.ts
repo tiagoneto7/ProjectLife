@@ -166,6 +166,24 @@ export async function eliminarEquipa(id: string) {
   if (!linha) return;
 
   const { sheets, sheetId } = getSheetsClient();
+
+  // Desatribui todos os inscritos que estavam nesta equipa, para não ficarem
+  // com um EquipaId "fantasma" que uma equipa nova possa vir a reutilizar.
+  const inscritos = await getInscricoes();
+  const afetados = inscritos.filter((i) => i.equipaId === id);
+  if (afetados.length > 0) {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: sheetId,
+      requestBody: {
+        valueInputOption: "RAW",
+        data: afetados.map((i) => ({
+          range: `Inscrições!U${i.rowIndex}`,
+          values: [[""]],
+        })),
+      },
+    });
+  }
+
   // Limpa a linha em vez de a apagar, para não desalinhar as restantes linhas.
   await sheets.spreadsheets.values.clear({
     spreadsheetId: sheetId,
