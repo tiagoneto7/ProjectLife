@@ -32,6 +32,10 @@ export default function AdminEnviarDocs({
   const emailsSelecionados = todos
     .filter((d) => selecionados.has(chave(d)))
     .flatMap((d) => d.emails);
+  // A API remove duplicados antes de enviar (ex: o mesmo email a ser
+  // responsável por mais do que um menor) — mostramos já esse número aqui
+  // para a contagem bater certo com o resultado final.
+  const emailsUnicos = Array.from(new Set(emailsSelecionados));
   const validadosSelecionados = validados.filter((d) => selecionados.has(chave(d))).length;
   const pendentesSelecionados = pendentes.filter((d) => selecionados.has(chave(d))).length;
 
@@ -169,7 +173,7 @@ export default function AdminEnviarDocs({
 
             <p className="mt-6 flex-none text-xs text-inksoft">
               {selecionados.size} selecionados ({validadosSelecionados} validados,{" "}
-              {pendentesSelecionados} pendentes) · {emailsSelecionados.length} emails
+              {pendentesSelecionados} pendentes) · {emailsUnicos.length} emails
             </p>
 
             {resultado ? (
