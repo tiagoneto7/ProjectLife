@@ -23,7 +23,7 @@ const CONTACTOS = {
  * Envia o email de confirmação de inscrição via Resend.
  * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
  */
-export async function sendConfirmationEmail(data: InscricaoInput) {
+export async function sendConfirmationEmail(data: InscricaoInput, rowIndex: number) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FROM_EMAIL;
 
@@ -40,6 +40,19 @@ export async function sendConfirmationEmail(data: InscricaoInput) {
     data.emailResponsavel.toLowerCase() !== data.email.toLowerCase()
       ? data.emailResponsavel
       : undefined;
+
+  // Link para retomar o pagamento automático (Cartão/MB WAY), mesmo que a
+  // pessoa tenha fechado a página de confirmação sem pagar logo ali.
+  const retomarParams = new URLSearchParams({
+    nome: data.nome,
+    email: data.email,
+    rowIndex: String(rowIndex),
+  });
+  if (data.menorDe18 === "sim") {
+    retomarParams.set("menorDe18", data.menorDe18);
+    if (data.emailResponsavel) retomarParams.set("emailResponsavel", data.emailResponsavel);
+  }
+  const retomarUrl = `${siteUrl}/fire/confirmacao?${retomarParams.toString()}`;
 
   await resend.emails.send({
     from,
@@ -61,48 +74,52 @@ export async function sendConfirmationEmail(data: InscricaoInput) {
         </table>
 
         <p>Olá, <strong>${escapeHtml(data.nome)}</strong>,</p>
-        <p style="color:#5a5a5a;">Estamos felizes por te termos a bordo! Agora que recebemos a tua inscrição, segue os próximos passos para a validarmos.</p>
+        <p style="color:#5a5a5a; margin:0 0 12px;">Estamos felizes por te termos a bordo!<br />Agora que recebemos a tua inscrição, segue os próximos passos para a validarmos.</p>
+        <p style="color:#5a5a5a; margin:0 0 12px;">Já efetuaste o pagamento? Ignora este email automático e aguarda pelo nosso contacto.</p>
 
-        <table style="width:100%; border-collapse:collapse; margin: 24px 0;">
+        <div style="border:1px solid #cfe3a0; background:#F8FBF0; border-radius:12px; padding:18px 18px 16px; margin-top:18px;">
+          <h3 style="margin:0 0 6px; font-size:16px; color:#1F2430;">Pagamento com Cartão ou MB WAY</h3>
+          <p style="margin:0 0 10px; color:#5a5a5a; font-size:14px; line-height:1.5;">Pagamento processado imediatamente — assim que confirmado, a tua inscrição fica automaticamente validada.</p>
+          <a href="${retomarUrl}" style="display:inline-block; margin-top:4px; padding:11px 20px; background:#7AA002; color:#ffffff; font-weight:600; text-decoration:none; border-radius:8px; font-size:14px;">Pagar agora</a>
+        </div>
+
+        <table width="100%" style="border-collapse:collapse; margin:18px 0 0;">
           <tr>
-            <td style="width:24px; padding: 14px 14px 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:top;">
-              <div style="border: 1.5px solid #7AA002; color:#7AA002; font-weight:700; border-radius:50%; width:24px; height:24px; text-align:center; line-height:22px; font-size:12px;">1</div>
-            </td>
-            <td style="padding: 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:top;">
-              Já efetuaste o pagamento?<br />
-              Ignora os passos 2 e 3 e aguarda pelo nosso contacto.
-            </td>
-          </tr>
-          <tr>
-            <td style="width:24px; padding: 14px 14px 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:top;">
-              <div style="border: 1.5px solid #7AA002; color:#7AA002; font-weight:700; border-radius:50%; width:24px; height:24px; text-align:center; line-height:22px; font-size:12px;">2</div>
-            </td>
-            <td style="padding: 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:top;">
-              <strong>Efetua o pagamento de ${EVENTO.valor}</strong> através de um destes métodos:
-              <ul style="margin: 8px 0 0; padding-left: 18px; color:#5a5a5a;">
-                <li>MBWAY (${PAGAMENTO.mbway})</li>
-                <li>Transferência Bancária (${PAGAMENTO.iban})</li>
-                <li>Pagamento em mãos</li>
-              </ul>
-            </td>
-          </tr>
-          <tr>
-            <td style="width:24px; padding: 14px 14px 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:middle;">
-              <div style="border: 1.5px solid #7AA002; color:#7AA002; font-weight:700; border-radius:50%; width:24px; height:24px; text-align:center; line-height:22px; font-size:12px;">3</div>
-            </td>
-            <td style="padding: 14px 0; border-bottom: 1px solid #f0f0f0; vertical-align:middle;">
-              Envia o comprovativo ou uma captura de ecrã pelo nosso Whatsapp ou email.
-            </td>
-          </tr>
-          <tr>
-            <td style="width:24px; padding: 14px 14px 14px 0; vertical-align:top;">
-              <div style="border: 1.5px solid #7AA002; color:#7AA002; font-weight:700; border-radius:50%; width:24px; height:24px; text-align:center; line-height:22px; font-size:12px;">4</div>
-            </td>
-            <td style="padding: 14px 0; vertical-align:top;">
-              Aguarda que validemos o pagamento e entremos em contacto contigo para mais novidades.
-            </td>
+            <td style="border-top:1px solid #ececec;"></td>
+            <td style="white-space:nowrap; padding:0 10px; color:#9a9a9a; font-size:12px; text-transform:uppercase; letter-spacing:0.06em;">ou, se preferires</td>
+            <td style="border-top:1px solid #ececec;"></td>
           </tr>
         </table>
+
+        <div style="border:1px solid #e7e7e2; border-radius:12px; padding:18px 18px 16px; margin-top:18px;">
+          <h3 style="margin:0 0 6px; font-size:16px; color:#1F2430;">Pagamento manual</h3>
+          <p style="margin:0 0 10px; color:#5a5a5a; font-size:14px; line-height:1.5;">Efetua o pagamento de <strong>${EVENTO.valor}</strong> através de um destes métodos:</p>
+          <ul style="margin: 0 0 14px; padding-left: 18px; color:#5a5a5a; font-size:14px;">
+            <li>MBWAY (${PAGAMENTO.mbway})</li>
+            <li>Transferência Bancária (${PAGAMENTO.iban})</li>
+            <li>Pagamento em mãos</li>
+          </ul>
+          <div style="margin-top:14px; padding-top:14px; border-top:1px dashed #e2e2dc;">
+            <table width="100%" style="border-collapse:collapse;">
+              <tr>
+                <td style="width:22px; padding:6px 8px 6px 0; vertical-align:top;">
+                  <div style="border:1.3px solid #b7bdad; color:#6B6F60; font-weight:700; border-radius:50%; width:18px; height:18px; text-align:center; line-height:16px; font-size:10.5px;">1</div>
+                </td>
+                <td style="padding:6px 0; vertical-align:top; font-size:13.5px; color:#5a5a5a;">
+                  Envia-nos o comprovativo ou uma captura de ecrã pelo Whatsapp ou email.
+                </td>
+              </tr>
+              <tr>
+                <td style="width:22px; padding:6px 8px 6px 0; vertical-align:top;">
+                  <div style="border:1.3px solid #b7bdad; color:#6B6F60; font-weight:700; border-radius:50%; width:18px; height:18px; text-align:center; line-height:16px; font-size:10.5px;">2</div>
+                </td>
+                <td style="padding:6px 0; vertical-align:top; font-size:13.5px; color:#5a5a5a;">
+                  Aguarda que validemos o pagamento e entremos em contacto contigo.
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
 
         <p style="color:#5a5a5a; margin: 32px 0 4px;">📅 ${EVENTO.datas}</p>
         <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>

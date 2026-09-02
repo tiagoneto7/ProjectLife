@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import InscricaoConfirmada from "@/components/InscricaoConfirmada";
+import { getInscricaoPorLinha } from "@/lib/sheets";
 
 export const metadata = {
   title: "Inscrição confirmada | Fire",
   description: "Inscrição confirmada para o campo Fire — Project Life",
 };
 
-export default function ConfirmacaoPage({
+export default async function ConfirmacaoPage({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -21,6 +22,16 @@ export default function ConfirmacaoPage({
 
   if (!nome || !email || !Number.isFinite(rowIndex)) {
     redirect("/fire");
+  }
+
+  // Ao retomar a partir do link do email, evita mostrar de novo o formulário
+  // de pagamento a quem já foi validado (manual ou automaticamente).
+  let inicialmentePago = false;
+  try {
+    const inscrito = await getInscricaoPorLinha(rowIndex);
+    inicialmentePago = inscrito?.estado.toLowerCase() === "pago";
+  } catch (err) {
+    console.error("Erro ao verificar estado do pagamento na Sheet:", err);
   }
 
   return (
@@ -58,6 +69,7 @@ export default function ConfirmacaoPage({
             rowIndex={rowIndex}
             menorDe18={menorDe18}
             emailResponsavel={emailResponsavel}
+            initialPago={inicialmentePago}
           />
         </div>
       </div>

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendConfirmationEmail(parsed.data);
+    await sendConfirmationEmail(parsed.data, rowIndex);
   } catch (err) {
     // A inscrição já está guardada, por isso não falhamos o pedido todo —
     // só registamos o erro para investigar depois.

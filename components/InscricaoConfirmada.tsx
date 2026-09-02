@@ -9,6 +9,7 @@ type Props = {
   rowIndex: number;
   menorDe18?: string;
   emailResponsavel?: string;
+  initialPago?: boolean;
 };
 
 export default function InscricaoConfirmada({
@@ -17,8 +18,9 @@ export default function InscricaoConfirmada({
   rowIndex,
   menorDe18,
   emailResponsavel,
+  initialPago = false,
 }: Props) {
-  const [paid, setPaid] = useState(false);
+  const [paid, setPaid] = useState(initialPago);
 
   return (
     <div>
@@ -43,62 +45,73 @@ export default function InscricaoConfirmada({
         </div>
       ) : (
         <>
-          <p className="mb-4 text-xs text-inksoft">
-            Para que a tua inscrição seja validada, é importante que sigas estes passos:
+          <p className="mb-5 text-xs text-inksoft">
+            Para que a tua inscrição seja validada, escolhe uma das formas de pagamento abaixo:
           </p>
 
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-widest text-branddark">
-            Passos a seguir
-          </h3>
+          <div className="rounded-xl border border-[#cfe3a0] bg-brand/10 p-5">
+            <h3 className="text-sm font-semibold text-ink">Pagamento com Cartão ou MB WAY</h3>
+            <p className="mt-1.5 text-sm text-inkmuted">
+              Pagamento processado imediatamente — assim que confirmado, a tua inscrição fica
+              automaticamente validada.
+            </p>
 
-          <div className="flex gap-3.5">
-            <StepNumber>1</StepNumber>
-            <div className="flex-1 pt-0.5">
-              <p>
-                Efetua o pagamento de <strong>35€</strong>
-              </p>
-
+            <div className="mt-3.5">
               <FirePayment rowIndex={rowIndex} email={email} nome={nome} onPaid={() => setPaid(true)} />
+            </div>
+          </div>
 
-              <p className="mt-3 text-xs text-inksoft">Ou, se preferires:</p>
-              <div className="mt-2 space-y-2">
-                <div className="flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 text-sm">
-                  <BankIcon className="h-5 w-5 flex-none text-inkmuted" />
-                  <div>
-                    <p className="font-medium text-ink">Transferência Bancária</p>
-                    <p className="text-xs text-inkmuted">PT50001800036195088702043</p>
-                  </div>
+          <div className="my-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider text-inksoft">
+            <span className="h-px flex-1 bg-line" />
+            ou, se preferires
+            <span className="h-px flex-1 bg-line" />
+          </div>
+
+          <div className="rounded-xl border border-line bg-white p-5">
+            <h3 className="text-sm font-semibold text-ink">Pagamento manual</h3>
+
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 text-sm">
+                <BankIcon className="h-5 w-5 flex-none text-inkmuted" />
+                <div>
+                  <p className="font-medium text-ink">Transferência Bancária</p>
+                  <p className="text-xs text-inkmuted">PT50001800036195088702043</p>
                 </div>
-                <div className="flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 text-sm">
-                  <CashIcon className="h-5 w-5 flex-none text-inkmuted" />
-                  <p className="font-medium text-ink">Pagamento em mãos</p>
-                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-line bg-white px-4 py-3 text-sm">
+                <CashIcon className="h-5 w-5 flex-none text-inkmuted" />
+                <p className="font-medium text-ink">Pagamento em mãos</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2.5 border-t border-dashed border-line pt-3.5">
+              <div className="flex items-center gap-2.5">
+                <MiniNumber>1</MiniNumber>
+                <p className="flex-1 text-xs text-inkmuted">
+                  Envia-nos o comprovativo ou uma captura de ecrã pelo Whatsapp ou email.
+                </p>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <MiniNumber>2</MiniNumber>
+                <p className="flex-1 text-xs text-inkmuted">
+                  Aguarda que validemos o pagamento e entremos em contacto contigo.
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-[18px] flex items-center gap-3.5">
-            <StepNumber>2</StepNumber>
-            <p className="flex-1">
-              Se pagares por transferência, envia o comprovativo para o nosso Whatsapp ou email.
-            </p>
-          </div>
-
-          <div className="mt-[18px] flex items-center gap-3.5">
-            <StepNumber>3</StepNumber>
-            <p className="flex-1">
-              Aguarda que validemos o pagamento e entremos em contacto contigo para mais novidades.
-            </p>
-          </div>
+          <p className="mt-6 text-center text-xs text-inksoft">
+            Podes continuar mais tarde através do link 'Pagar Agora' enviado no email.
+          </p>
         </>
       )}
     </div>
   );
 }
 
-function StepNumber({ children }: { children: React.ReactNode }) {
+function MiniNumber({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-6 w-6 flex-none items-center justify-center rounded-full border-[1.5px] border-branddark text-xs font-bold text-branddark">
+    <div className="flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border-[1.3px] border-branddark text-[10px] font-bold text-branddark">
       {children}
     </div>
   );
