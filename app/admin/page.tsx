@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { ADMIN_SESSION_COOKIE, isValidAdminSession } from "@/lib/auth";
-import { getInscricoes } from "@/lib/sheets";
+import { getInscricoes, getEquipas } from "@/lib/sheets";
 import AdminLoginForm from "@/components/AdminLoginForm";
 import AdminTabelaInscritos from "@/components/AdminTabelaInscritos";
 
@@ -13,7 +13,7 @@ export default async function AdminPage() {
     return <AdminLoginForm />;
   }
 
-  const inscritos = await getInscricoes();
+  const [inscritos, equipas] = await Promise.all([getInscricoes(), getEquipas()]);
 
   const semRestricao = ["nada", "nenhum", "nenhuma"];
   const temRestricao = (texto: string) =>
@@ -35,6 +35,7 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-7xl px-3 py-10">
       <AdminTabelaInscritos
         inscritos={inscritos}
+        equipas={equipas}
         restricoesFisicas={restricoesFisicas}
         restricoesAlimentares={restricoesAlimentares}
         alergias={alergias}

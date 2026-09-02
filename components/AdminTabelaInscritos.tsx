@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { InscritoRow } from "@/lib/sheets";
+import type { InscritoRow, Equipa } from "@/lib/sheets";
 import AdminEstadoEditor from "@/components/AdminEstadoEditor";
 import AdminEnviarDocs from "@/components/AdminEnviarDocs";
 import AdminResumoRestricoes from "@/components/AdminResumoRestricoes";
@@ -12,6 +12,7 @@ type ItemRestricao = { nome: string; texto: string };
 
 type Props = {
   inscritos: InscritoRow[];
+  equipas: Equipa[];
   restricoesFisicas: ItemRestricao[];
   restricoesAlimentares: ItemRestricao[];
   alergias: ItemRestricao[];
@@ -38,7 +39,7 @@ function DetailsCell({ items }: { items: { label: string; value: string }[] }) {
 
   return (
     <details className="group">
-      <summary className="cursor-pointer list-none text-sm text-ink underline decoration-dotted underline-offset-2 marker:content-none">
+      <summary className="cursor-pointer list-none whitespace-nowrap text-sm text-ink underline decoration-dotted underline-offset-2 marker:content-none">
         Ver ({filled.length})
       </summary>
       <div className="mt-1.5 min-w-[200px] space-y-1 text-xs text-inkmuted">
@@ -52,8 +53,22 @@ function DetailsCell({ items }: { items: { label: string; value: string }[] }) {
   );
 }
 
+function TextoCell({ texto }: { texto: string }) {
+  if (!texto) return <span className="text-inksoft">—</span>;
+
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none text-sm text-ink underline decoration-dotted underline-offset-2 marker:content-none">
+        Ver
+      </summary>
+      <p className="mt-1.5 min-w-[200px] max-w-[280px] text-xs text-inkmuted">{texto}</p>
+    </details>
+  );
+}
+
 export default function AdminTabelaInscritos({
   inscritos,
+  equipas,
   restricoesFisicas,
   restricoesAlimentares,
   alergias,
@@ -124,7 +139,7 @@ export default function AdminTabelaInscritos({
             />
           </div>
           <div className="flex-1 sm:flex-none [&>button]:w-full">
-            <AdminEquipas transparente />
+            <AdminEquipas equipas={equipas} inscritos={inscritos} transparente />
           </div>
           <div className="flex-1 sm:flex-none [&>button]:w-full">
             <AdminEnviarDocs validados={destinatariosValidados} pendentes={destinatariosPendentes} />
@@ -168,7 +183,12 @@ export default function AdminTabelaInscritos({
               return (
                 <tr key={inscrito.rowIndex} className="border-b">
                   <td className="p-2">
-                    <div>{new Date(inscrito.data).toLocaleDateString("pt-PT")}</div>
+                    <div>
+                      {new Date(inscrito.data).toLocaleDateString("pt-PT", {
+                        day: "2-digit",
+                        month: "2-digit",
+                      })}
+                    </div>
                     <div className="text-inksoft">
                       {new Date(inscrito.data).toLocaleTimeString("pt-PT", {
                         hour: "2-digit",
@@ -192,8 +212,8 @@ export default function AdminTabelaInscritos({
                   <td className="p-2">
                     <DetailsCell items={saudeItems} />
                   </td>
-                  <td className="max-w-[160px] truncate p-2" title={inscrito.observacoes || undefined}>
-                    {inscrito.observacoes || "—"}
+                  <td className="p-2">
+                    <TextoCell texto={inscrito.observacoes} />
                   </td>
                   <td className="p-2">
                     <AdminEstadoEditor rowIndex={inscrito.rowIndex} initialEstado={inscrito.estado} />

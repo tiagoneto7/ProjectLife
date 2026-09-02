@@ -16,6 +16,7 @@ export default function AdminEstadoEditor({
   const [open, setOpen] = useState(false);
   const [draftPago, setDraftPago] = useState(initialEstado.toLowerCase() === "pago");
   const [password, setPassword] = useState("");
+  const [enviarEmail, setEnviarEmail] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,12 +28,17 @@ export default function AdminEstadoEditor({
 
   useCloseOnEscape(open, fechar);
 
+  const isPago = estado.toLowerCase() === "pago";
+
   function abrir() {
-    setDraftPago(estado.toLowerCase() === "pago");
+    setDraftPago(isPago);
+    setEnviarEmail(true);
     setPassword("");
     setError(null);
     setOpen(true);
   }
+
+  const passaAPago = !isPago && draftPago;
 
   async function handleConfirm() {
     setSaving(true);
@@ -43,7 +49,12 @@ export default function AdminEstadoEditor({
     const res = await fetch("/api/admin/estado", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rowIndex, estado: novoEstado, password }),
+      body: JSON.stringify({
+        rowIndex,
+        estado: novoEstado,
+        password,
+        enviarEmail: passaAPago && enviarEmail,
+      }),
     });
     const data = await res.json();
 
@@ -58,8 +69,6 @@ export default function AdminEstadoEditor({
     fechar();
     router.refresh();
   }
-
-  const isPago = estado.toLowerCase() === "pago";
 
   return (
     <>
@@ -111,6 +120,18 @@ export default function AdminEstadoEditor({
                 <span className="font-medium text-ink">Pendente</span>
               </label>
             </div>
+
+            {passaAPago && (
+              <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-line bg-surfacealt px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={enviarEmail}
+                  onChange={(e) => setEnviarEmail(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 flex-none accent-branddark"
+                />
+                <span className="text-ink">Enviar email de confirmação de pagamento ao guardar</span>
+              </label>
+            )}
 
             <input
               type="password"

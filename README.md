@@ -68,6 +68,13 @@ A coluna **Estado** (`Pendente`/`Pago`) é escrita automaticamente como "Pendent
 
 ⚠️ É uma proteção simples (uma única password partilhada), suficiente para uso interno da equipa — não é um sistema de utilizadores.
 
+### Equipas
+
+Para o construtor de equipas (botão "Equipas" no `/admin`), a Google Sheet precisa de mais dois ajustes:
+
+1. Cria uma aba nova chamada **"Equipas"**, com cabeçalho `ID | Nome | Cor` (colunas A, B, C).
+2. Na aba **"Inscrições"**, adiciona um cabeçalho na coluna **U** (ex: `EquipaId`) — é onde fica guardada a equipa de cada inscrito.
+
 ## Regulamento (PDF) para download
 
 O ficheiro `public/regulamento-fire.pdf` fica acessível em `/regulamento-fire.pdf` e é

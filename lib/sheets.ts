@@ -88,6 +88,102 @@ export async function updateEstado(rowIndex: number, estado: string) {
   });
 }
 
+/**
+ * Equipas: guardadas numa aba própria "Equipas" (colunas A=ID, B=Nome, C=Cor).
+ * A equipa de cada inscrito é guardada na coluna U da aba "Inscrições".
+ *
+ * Configuração adicional necessária (ver README.md):
+ * 4. Criar uma aba chamada "Equipas" na mesma Sheet, com cabeçalho ID / Nome / Cor.
+ */
+export type Equipa = { id: string; nome: string; cor: string };
+
+const EQUIPAS_RANGE = "Equipas!A:C";
+
+export async function getEquipas(): Promise<Equipa[]> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: "Equipas!A2:C",
+  });
+
+  const rows = res.data.values ?? [];
+  return rows
+    .filter((row) => row[0] && row[1])
+    .map((row) => ({ id: row[0], nome: row[1] ?? "", cor: row[2] ?? "" }));
+}
+
+export async function criarEquipa(nome: string, cor: string): Promise<Equipa> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  // IDs simples e sequenciais (1, 2, 3…), a partir do maior ID já usado.
+  const existentes = await getEquipas();
+  const maiorId = existentes.reduce((max, e) => {
+    const n = Number(e.id);
+    return Number.isFinite(n) && n > max ? n : max;
+  }, 0);
+  const id = String(maiorId + 1);
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetId,
+    range: EQUIPAS_RANGE,
+    valueInputOption: "RAW",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: [[id, nome, cor]] },
+  });
+
+  return { id, nome, cor };
+}
+
+async function encontrarLinhaEquipa(id: string): Promise<number | null> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId,
+    range: "Equipas!A2:A",
+  });
+
+  const rows = res.data.values ?? [];
+  const idx = rows.findIndex((row) => row[0] === id);
+  return idx === -1 ? null : idx + 2;
+}
+
+export async function atualizarEquipa(id: string, nome: string, cor: string) {
+  const linha = await encontrarLinhaEquipa(id);
+  if (!linha) throw new Error("Equipa não encontrada.");
+
+  const { sheets, sheetId } = getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: sheetId,
+    range: `Equipas!B${linha}:C${linha}`,
+    valueInputOption: "RAW",
+    requestBody: { values: [[nome, cor]] },
+  });
+}
+
+export async function eliminarEquipa(id: string) {
+  const linha = await encontrarLinhaEquipa(id);
+  if (!linha) return;
+
+  const { sheets, sheetId } = getSheetsClient();
+  // Limpa a linha em vez de a apagar, para não desalinhar as restantes linhas.
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId: sheetId,
+    range: `Equipas!A${linha}:C${linha}`,
+  });
+}
+
+export async function atualizarEquipaInscrito(rowIndex: number, equipaId: string) {
+  const { sheets, sheetId } = getSheetsClient();
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: sheetId,
+    range: `Inscrições!U${rowIndex}`,
+    valueInputOption: "RAW",
+    requestBody: { values: [[equipaId]] },
+  });
+}
+
 export type InscritoRow = {
   rowIndex: number;
   data: string;
@@ -110,6 +206,7 @@ export type InscritoRow = {
   consentimentoImagens: string;
   consentimentoContacto: string;
   estado: string;
+  equipaId: string;
 };
 
 function linhaParaInscrito(row: string[], rowIndex: number): InscritoRow {
@@ -135,6 +232,7 @@ function linhaParaInscrito(row: string[], rowIndex: number): InscritoRow {
     consentimentoImagens: row[17] ?? "",
     consentimentoContacto: row[18] ?? "",
     estado: row[19] || "Pendente",
+    equipaId: row[20] ?? "",
   };
 }
 
@@ -144,7 +242,7 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEET_RANGE.split("!")[0]}!A2:T`,
+    range: `${SHEET_RANGE.split("!")[0]}!A2:U`,
   });
 
   const rows = res.data.values ?? [];
@@ -157,7 +255,7 @@ export async function getInscricaoPorLinha(rowIndex: number): Promise<InscritoRo
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `Inscrições!A${rowIndex}:T${rowIndex}`,
+    range: `Inscrições!A${rowIndex}:U${rowIndex}`,
   });
 
   const row = res.data.values?.[0];
