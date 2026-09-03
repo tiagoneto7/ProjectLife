@@ -34,6 +34,13 @@ export default function SiteFooter() {
             <div className="mt-3 flex flex-col gap-2">
               <Image src="/culligan-logo.png" alt="Culligan" width={80} height={27} className="mt-1" />
               <Image src="/corl-supply-logo.png" alt="Corl Supply" width={86} height={45} />
+              <Image
+                src="/custom-design-logo.png"
+                alt="Custom Design"
+                width={101}
+                height={24}
+                className="mt-1.5"
+              />
             </div>
           </div>
 

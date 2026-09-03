@@ -81,14 +81,19 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
   const [aGuardarEdicao, setAGuardarEdicao] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
 
+  // Tocar num chip abre esta modal para escolher a equipa — é a forma de
+  // atribuir em ecrãs táteis, onde o drag-and-drop nativo não funciona.
+  const [atribuirPara, setAtribuirPara] = useState<InscritoRow | null>(null);
+
   function fechar() {
     setOpen(false);
     setNovoAberto(false);
     setEditId(null);
     setErro(null);
   }
-  useCloseOnEscape(open && !confirmarEliminar, fechar);
+  useCloseOnEscape(open && !confirmarEliminar && !atribuirPara, fechar);
   useCloseOnEscape(confirmarEliminar, () => setConfirmarEliminar(false));
+  useCloseOnEscape(!!atribuirPara, () => setAtribuirPara(null));
 
   // Mantém o estado local em linha com o que vem do servidor sempre que a página revalida.
   useEffect(() => {
@@ -215,19 +220,22 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
   function chip(inscrito: InscritoRow) {
     const pago = inscrito.estado.toLowerCase() === "pago";
     return (
-      <div
+      <button
         key={inscrito.rowIndex}
+        type="button"
         draggable
         onDragStart={() => setArrastando(inscrito.rowIndex)}
         onDragEnd={() => setArrastando(null)}
-        className="flex cursor-grab items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-sm active:cursor-grabbing"
+        onClick={() => setAtribuirPara(inscrito)}
+        title="Tocar para escolher a equipa"
+        className="flex cursor-grab items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-sm hover:bg-surfacealt active:cursor-grabbing"
       >
         <span
           className={`h-1.5 w-1.5 flex-none rounded-full ${pago ? "bg-green-500" : "bg-amber-400"}`}
           aria-hidden="true"
         />
         {primeiroEUltimoNome(inscrito.nome)}
-      </div>
+      </button>
     );
   }
 
@@ -282,12 +290,12 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
 
             {erro && <p className="mt-2 flex-none text-sm text-red-600">{erro}</p>}
 
-            <div className="mt-4 flex flex-1 gap-4 overflow-hidden">
+            <div className="mt-4 flex flex-1 flex-col gap-4 overflow-y-auto sm:flex-row sm:overflow-hidden">
               {/* Não atribuídos */}
               <div
                 {...dropzoneProps("nao-atribuidos", () => arrastando !== null && atribuir(arrastando, ""))}
                 className={
-                  "flex w-48 flex-none flex-col overflow-y-auto rounded-lg border p-2 " +
+                  "flex max-h-48 w-full flex-none flex-col overflow-y-auto rounded-lg border p-2 sm:max-h-none sm:w-48 " +
                   (sobreZona === "nao-atribuidos"
                     ? "border-branddark bg-surfacealt"
                     : "border-line")
@@ -473,6 +481,66 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
                 className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {aGuardarEdicao ? "A eliminar…" : "Sim, eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {atribuirPara && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setAtribuirPara(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-xl border border-line bg-surface p-5 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-ink">{primeiroEUltimoNome(atribuirPara.nome)}</p>
+            <p className="mt-1 text-xs text-inksoft">Escolhe a equipa</p>
+
+            <div className="mt-3 max-h-64 space-y-1.5 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  atribuir(atribuirPara.rowIndex, "");
+                  setAtribuirPara(null);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-left text-sm text-inkmuted hover:bg-surfacealt"
+              >
+                Sem equipa
+              </button>
+              {equipas.map((e) => (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => {
+                    atribuir(atribuirPara.rowIndex, e.id);
+                    setAtribuirPara(null);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2 text-left text-sm text-ink hover:bg-surfacealt"
+                >
+                  <span
+                    className="h-3 w-3 flex-none rounded-full"
+                    style={{ backgroundColor: e.cor || CORES[0].bg }}
+                  />
+                  {e.nome}
+                </button>
+              ))}
+              {equipas.length === 0 && (
+                <p className="px-1 py-1 text-xs text-inksoft">Ainda não há equipas — cria uma primeiro.</p>
+              )}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setAtribuirPara(null)}
+                className="text-sm text-inkmuted hover:text-ink"
+              >
+                Cancelar
               </button>
             </div>
           </div>

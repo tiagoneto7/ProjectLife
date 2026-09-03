@@ -79,6 +79,16 @@ Para o construtor de equipas (botão "Equipas" no `/admin`), a Google Sheet prec
 
 Para saber se um pagamento foi validado automaticamente (Stripe/MB WAY) ou marcado manualmente no `/admin`, adiciona mais um cabeçalho na aba **"Inscrições"**, na coluna **U** (ex: `OrigemPagamento`). Fica com `Automático` ou `Manual`, consoante o caso — e aparece como "(auto)"/"(manual)" ao lado do Estado no `/admin`.
 
+### Emails que falham a enviar (bounces)
+
+O `resend.batch.send()` só confirma que os emails foram colocados na fila — não avisa aqui se algum
+falhar. Se um endereço já tiver tido *hard bounces* antes, o Resend bloqueia-o automaticamente
+("suppression list"), e isso só é visível no [dashboard do Resend](https://resend.com/emails)
+(secção Emails → Events), não no `/admin`. Depois de um envio em massa (ex: "Enviar Emails"),
+vale a pena confirmar lá que tudo foi entregue. Não há webhook configurado para isto — se um dia
+quiseres alertas automáticos, dá para montar um webhook do Resend igual ao que já existe para o
+Stripe (`app/api/stripe/webhook`).
+
 ## Regulamento (PDF) para download
 
 O ficheiro `public/regulamento-fire.pdf` fica acessível em `/regulamento-fire.pdf` e é

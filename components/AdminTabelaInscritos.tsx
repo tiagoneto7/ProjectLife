@@ -180,7 +180,7 @@ export default function AdminTabelaInscritos({
               ];
 
               return (
-                <tr key={inscrito.rowIndex} className="border-b">
+                <tr key={inscrito.rowIndex} className="border-b odd:bg-surfacealt/50">
                   <td className="p-2">
                     <div>
                       {new Date(inscrito.data).toLocaleDateString("pt-PT", {
