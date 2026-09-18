@@ -1,8 +1,8 @@
 /**
  * Estados de pagamento de uma inscrição, tal como ficam na coluna T da Sheet.
  *
- * "Vaga social" é alguém que não pagou mas está confirmado na mesma — conta
- * como validado em tudo (emails, equipas, listas), mas não entra na receita.
+ * "Vaga social" é alguém que não pagou mas vem ao FIRE na mesma — recebe os
+ * emails e entra nas equipas como quem pagou, mas não entra na receita.
  *
  * Fica num módulo próprio (sem o googleapis do lib/sheets.ts) para poder ser
  * usado também nos componentes de cliente.
@@ -22,13 +22,13 @@ export function pagou(estado: string): boolean {
   return normaliza(estado) === normaliza(ESTADOS.pago);
 }
 
-/** Vaga social: não pagou, mas a inscrição está validada à mesma. */
+/** Vaga social: não pagou, mas vem ao FIRE na mesma. */
 export function ehVagaSocial(estado: string): boolean {
   return normaliza(estado) === normaliza(ESTADOS.social);
 }
 
-/** Confirmado para o campo, tenha pago ou não. */
-export function estaValidado(estado: string): boolean {
+/** Vem ao FIRE: pagou ou tem vaga social. */
+export function estaConfirmado(estado: string): boolean {
   return pagou(estado) || ehVagaSocial(estado);
 }
 

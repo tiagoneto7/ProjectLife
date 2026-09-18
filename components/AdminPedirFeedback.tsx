@@ -2,40 +2,33 @@
 
 import { useState } from "react";
 import { useCloseOnEscape } from "@/lib/useCloseOnEscape";
+import AdminListaDestinatarios, {
+  chave,
+  resumoSelecao,
+  selecaoPorDefeito,
+  todosDestinatarios,
+  type Destinatario,
+  type GruposDestinatarios,
+} from "@/components/AdminListaDestinatarios";
 
-type Destinatario = {
-  nome: string;
-  emails: string[];
-};
-
-function chave(d: Destinatario) {
-  return `${d.nome}|${d.emails.join(",")}`;
-}
-
-export default function AdminPedirFeedback({
-  validados,
-  pendentes,
-}: {
-  validados: Destinatario[];
-  pendentes: Destinatario[];
-}) {
+export default function AdminPedirFeedback({ grupos }: { grupos: GruposDestinatarios }) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [aEnviar, setAEnviar] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [resultado, setResultado] = useState<{ total: number } | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(
-    () => new Set(validados.map(chave))
+    () => selecaoPorDefeito(grupos)
   );
 
-  const todos = [...validados, ...pendentes];
+  const todos = todosDestinatarios(grupos);
   const emailsSelecionados = todos
     .filter((d) => selecionados.has(chave(d)))
     .flatMap((d) => d.emails);
   const emailsUnicos = Array.from(new Set(emailsSelecionados));
 
   function abrir() {
-    setSelecionados(new Set(validados.map(chave)));
+    setSelecionados(selecaoPorDefeito(grupos));
     setOpen(true);
   }
 
@@ -84,7 +77,7 @@ export default function AdminPedirFeedback({
       <button
         type="button"
         onClick={abrir}
-        className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink hover:bg-branddark"
+        className="w-full rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink hover:bg-branddark"
       >
         Enviar link por email
       </button>
@@ -106,67 +99,11 @@ export default function AdminPedirFeedback({
             </p>
 
             <div className="mt-3 flex-1 overflow-y-auto rounded-lg border border-line">
-              {todos.length === 0 ? (
-                <p className="p-3 text-sm text-inksoft">Não há inscritos nesta edição.</p>
-              ) : (
-                <>
-                  {validados.length > 0 && (
-                    <div>
-                      <p className="sticky top-0 bg-surfacealt px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-inksoft">
-                        Validados ({validados.length})
-                      </p>
-                      <ul className="divide-y divide-line text-sm">
-                        {validados.map((d) => (
-                          <li key={chave(d)}>
-                            <label className="flex cursor-pointer items-start gap-2.5 p-2.5 hover:bg-surfacealt">
-                              <input
-                                type="checkbox"
-                                checked={selecionados.has(chave(d))}
-                                onChange={() => toggle(d)}
-                                className="mt-0.5 h-4 w-4 flex-none accent-branddark"
-                              />
-                              <span>
-                                <p className="font-medium text-ink">{d.nome}</p>
-                                <p className="text-xs text-inkmuted">{d.emails.join(" · ")}</p>
-                              </span>
-                            </label>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {pendentes.length > 0 && (
-                    <div>
-                      <p className="sticky top-0 bg-surfacealt px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-inksoft">
-                        Pendentes ({pendentes.length})
-                      </p>
-                      <ul className="divide-y divide-line text-sm">
-                        {pendentes.map((d) => (
-                          <li key={chave(d)}>
-                            <label className="flex cursor-pointer items-start gap-2.5 p-2.5 hover:bg-surfacealt">
-                              <input
-                                type="checkbox"
-                                checked={selecionados.has(chave(d))}
-                                onChange={() => toggle(d)}
-                                className="mt-0.5 h-4 w-4 flex-none accent-branddark"
-                              />
-                              <span>
-                                <p className="font-medium text-ink">{d.nome}</p>
-                                <p className="text-xs text-inkmuted">{d.emails.join(" · ")}</p>
-                              </span>
-                            </label>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
+              <AdminListaDestinatarios grupos={grupos} selecionados={selecionados} onToggle={toggle} />
             </div>
 
             <p className="mt-4 flex-none text-xs text-inksoft">
-              {selecionados.size} selecionados · {emailsUnicos.length} emails
+              {resumoSelecao(grupos, selecionados)}
             </p>
 
             {resultado ? (

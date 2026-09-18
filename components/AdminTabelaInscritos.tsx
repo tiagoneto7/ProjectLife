@@ -1,20 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import type { InscritoRow, Equipa } from "@/lib/sheets";
-import { ehVagaSocial, estaValidado } from "@/lib/estados";
+import type { InscritoRow } from "@/lib/sheets";
+import { ehVagaSocial, estaConfirmado, pagou } from "@/lib/estados";
 import AdminVista, { useVista } from "@/components/AdminVista";
 import AdminEstadoEditor from "@/components/AdminEstadoEditor";
+import { agruparDestinatarios } from "@/components/AdminListaDestinatarios";
 import AdminEnviarDocs from "@/components/AdminEnviarDocs";
 import AdminResumoRestricoes from "@/components/AdminResumoRestricoes";
-import AdminEquipas from "@/components/AdminEquipas";
 
 type Filtro = "todos" | "pago" | "pendente" | "social";
 type ItemRestricao = { nome: string; texto: string };
 
 type Props = {
   inscritos: InscritoRow[];
-  equipas: Equipa[];
   restricoesFisicas: ItemRestricao[];
   restricoesAlimentares: ItemRestricao[];
   alergias: ItemRestricao[];
@@ -73,7 +72,6 @@ function TextoCell({ texto }: { texto: string }) {
 
 export default function AdminTabelaInscritos({
   inscritos,
-  equipas,
   restricoesFisicas,
   restricoesAlimentares,
   alergias,
@@ -83,28 +81,23 @@ export default function AdminTabelaInscritos({
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [vista, mudarVista] = useVista("inscritos", "lista");
 
-  const totalValidados = inscritos.filter((i) => estaValidado(i.estado)).length;
-  const totalPendente = inscritos.length - totalValidados;
+  const totalPagos = inscritos.filter((i) => pagou(i.estado)).length;
+  // Pendentes = nem pagou nem é vaga social (Todos = Pagos + Pendentes + Sociais).
+  const totalPendente = inscritos.filter((i) => !estaConfirmado(i.estado)).length;
   const totalSociais = inscritos.filter((i) => ehVagaSocial(i.estado)).length;
 
-  const paraDestinatario = (i: InscritoRow) => {
-    const emails = [i.email];
-    if (i.menorDe18 === "Sim" && i.emailResponsavel) emails.push(i.emailResponsavel);
-    return { nome: i.nome, emails };
-  };
-  const destinatariosValidados = inscritos.filter((i) => estaValidado(i.estado)).map(paraDestinatario);
-  const destinatariosPendentes = inscritos.filter((i) => !estaValidado(i.estado)).map(paraDestinatario);
+  const destinatarios = agruparDestinatarios(inscritos);
 
   const visiveis = inscritos.filter((i) => {
     if (filtro === "todos") return true;
-    if (filtro === "pago") return estaValidado(i.estado);
+    if (filtro === "pago") return pagou(i.estado);
     if (filtro === "social") return ehVagaSocial(i.estado);
-    return !estaValidado(i.estado);
+    return !estaConfirmado(i.estado);
   });
 
   const opcoesFiltro: { valor: Filtro; label: string; total: number }[] = [
     { valor: "todos", label: "Todos", total: inscritos.length },
-    { valor: "pago", label: "Validados", total: totalValidados },
+    { valor: "pago", label: "Pagos", total: totalPagos },
     { valor: "pendente", label: "Pendentes", total: totalPendente },
     { valor: "social", label: "Sociais", total: totalSociais },
   ];
@@ -137,7 +130,7 @@ export default function AdminTabelaInscritos({
           <AdminVista vista={vista} onMudar={mudarVista} />
         </div>
 
-        {/* Resumo + Equipas + Enviar Email Final como chips soltos, full width em mobile */}
+        {/* Resumo + Enviar Email Final como chips soltos, full width em mobile */}
         <div className="order-1 flex w-full items-center gap-2 sm:order-2 sm:ml-auto sm:w-auto">
           <div className="flex-1 sm:flex-none [&>button]:w-full">
             <AdminResumoRestricoes
@@ -147,20 +140,10 @@ export default function AdminTabelaInscritos({
               transparente
             />
           </div>
-          <div className="flex-1 sm:flex-none [&>button]:w-full">
-            <AdminEquipas
-              equipas={equipas}
-              inscritos={inscritos}
-              edicao={edicao ?? 0}
-              transparente
-              readOnly={arquivada}
-            />
-          </div>
           {!arquivada && (
             <div className="flex-1 sm:flex-none [&>button]:w-full">
               <AdminEnviarDocs
-                validados={destinatariosValidados}
-                pendentes={destinatariosPendentes}
+                grupos={destinatarios}
               />
             </div>
           )}

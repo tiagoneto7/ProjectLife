@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { ADMIN_SESSION_COOKIE, isValidAdminSession } from "@/lib/auth";
-import { getInscricoes, getEquipas, getDespesas, getFeedback } from "@/lib/sheets";
+import { getInscricoes, getEquipas, getMovimentos, getFeedback } from "@/lib/sheets";
 import AdminLoginForm from "@/components/AdminLoginForm";
 import AdminPainel from "@/components/AdminPainel";
 
@@ -13,10 +13,10 @@ export default async function AdminPage() {
     return <AdminLoginForm />;
   }
 
-  const [inscritos, equipas, despesas, feedback] = await Promise.all([
+  const [inscritos, equipas, movimentos, feedback] = await Promise.all([
     getInscricoes(),
     getEquipas(),
-    getDespesas(),
+    getMovimentos(),
     getFeedback(),
   ]);
 
@@ -25,7 +25,7 @@ export default async function AdminPage() {
       <AdminPainel
         inscritos={inscritos}
         equipas={equipas}
-        despesas={despesas}
+        movimentos={movimentos}
         feedback={feedback}
       />
     </div>

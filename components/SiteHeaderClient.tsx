@@ -46,7 +46,14 @@ export default function SiteHeaderClient({ isAdmin }: { isAdmin: boolean }) {
               {link.label}
             </Link>
           ))}
-          {isAdmin && <AdminLogoutButton />}
+          {isAdmin && (
+            <>
+              <span className="h-4 w-px bg-line" aria-hidden="true" />
+              <AdminLogoutButton />
+              {/* O /admin injeta aqui o seletor de edição (portal em AdminPainel). */}
+              <span id="admin-edicao-slot" className="-ml-2 empty:hidden" />
+            </>
+          )}
         </nav>
 
         <button

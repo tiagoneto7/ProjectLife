@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sessão inválida. Volta a entrar." }, { status: 401 });
   }
 
-  const { id, nome, cor, eliminar } = await req.json().catch(() => ({}));
+  const { id, nome, cor, monitores, lugar, eliminar } = await req.json().catch(() => ({}));
 
   if (typeof id !== "string" || !id.trim()) {
     return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
@@ -25,7 +25,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
     }
 
-    await atualizarEquipa(id, nome.trim(), cor.trim());
+    const listaMonitores = Array.isArray(monitores)
+      ? monitores
+          .filter((m): m is string => typeof m === "string")
+          // A vírgula é o separador na Sheet, por isso não pode aparecer num nome.
+          .map((m) => m.replace(/,/g, " ").trim().slice(0, 80))
+          .filter(Boolean)
+          .slice(0, 10)
+      : [];
+    const lugarFinal = Number.isInteger(lugar) && lugar > 0 && lugar <= 50 ? lugar : 0;
+
+    await atualizarEquipa(id, nome.trim(), cor.trim(), listaMonitores, lugarFinal);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Erro ao atualizar equipa na Google Sheet:", err);

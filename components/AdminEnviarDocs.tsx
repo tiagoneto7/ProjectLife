@@ -2,33 +2,26 @@
 
 import { useState } from "react";
 import { useCloseOnEscape } from "@/lib/useCloseOnEscape";
+import AdminListaDestinatarios, {
+  chave,
+  resumoSelecao,
+  selecaoPorDefeito,
+  todosDestinatarios,
+  type Destinatario,
+  type GruposDestinatarios,
+} from "@/components/AdminListaDestinatarios";
 
-type Destinatario = {
-  nome: string;
-  emails: string[];
-};
-
-function chave(d: Destinatario) {
-  return `${d.nome}|${d.emails.join(",")}`;
-}
-
-export default function AdminEnviarDocs({
-  validados,
-  pendentes,
-}: {
-  validados: Destinatario[];
-  pendentes: Destinatario[];
-}) {
+export default function AdminEnviarDocs({ grupos }: { grupos: GruposDestinatarios }) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<{ total: number } | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(
-    () => new Set(validados.map(chave))
+    () => selecaoPorDefeito(grupos)
   );
 
-  const todos = [...validados, ...pendentes];
+  const todos = todosDestinatarios(grupos);
   const emailsSelecionados = todos
     .filter((d) => selecionados.has(chave(d)))
     .flatMap((d) => d.emails);
@@ -36,11 +29,9 @@ export default function AdminEnviarDocs({
   // responsável por mais do que um menor) — mostramos já esse número aqui
   // para a contagem bater certo com o resultado final.
   const emailsUnicos = Array.from(new Set(emailsSelecionados));
-  const validadosSelecionados = validados.filter((d) => selecionados.has(chave(d))).length;
-  const pendentesSelecionados = pendentes.filter((d) => selecionados.has(chave(d))).length;
 
   function abrir() {
-    setSelecionados(new Set(validados.map(chave)));
+    setSelecionados(selecaoPorDefeito(grupos));
     setOpen(true);
   }
 
@@ -112,68 +103,11 @@ export default function AdminEnviarDocs({
             </p>
 
             <div className="mt-3 flex-1 overflow-y-auto rounded-lg border border-line">
-              {todos.length === 0 ? (
-                <p className="p-3 text-sm text-inksoft">Ainda não há nenhum inscrito.</p>
-              ) : (
-                <>
-                  {validados.length > 0 && (
-                    <div>
-                      <p className="sticky top-0 bg-surfacealt px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-inksoft">
-                        Validados ({validados.length})
-                      </p>
-                      <ul className="divide-y divide-line text-sm">
-                        {validados.map((d) => (
-                          <li key={chave(d)}>
-                            <label className="flex cursor-pointer items-start gap-2.5 p-2.5 hover:bg-surfacealt">
-                              <input
-                                type="checkbox"
-                                checked={selecionados.has(chave(d))}
-                                onChange={() => toggle(d)}
-                                className="mt-0.5 h-4 w-4 flex-none accent-branddark"
-                              />
-                              <span>
-                                <p className="font-medium text-ink">{d.nome}</p>
-                                <p className="text-xs text-inkmuted">{d.emails.join(" · ")}</p>
-                              </span>
-                            </label>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {pendentes.length > 0 && (
-                    <div>
-                      <p className="sticky top-0 bg-surfacealt px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-inksoft">
-                        Pendentes ({pendentes.length})
-                      </p>
-                      <ul className="divide-y divide-line text-sm">
-                        {pendentes.map((d) => (
-                          <li key={chave(d)}>
-                            <label className="flex cursor-pointer items-start gap-2.5 p-2.5 hover:bg-surfacealt">
-                              <input
-                                type="checkbox"
-                                checked={selecionados.has(chave(d))}
-                                onChange={() => toggle(d)}
-                                className="mt-0.5 h-4 w-4 flex-none accent-branddark"
-                              />
-                              <span>
-                                <p className="font-medium text-ink">{d.nome}</p>
-                                <p className="text-xs text-inkmuted">{d.emails.join(" · ")}</p>
-                              </span>
-                            </label>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
-              )}
+              <AdminListaDestinatarios grupos={grupos} selecionados={selecionados} onToggle={toggle} />
             </div>
 
             <p className="mt-6 flex-none text-xs text-inksoft">
-              {selecionados.size} selecionados ({validadosSelecionados} validados,{" "}
-              {pendentesSelecionados} pendentes) · {emailsUnicos.length} emails
+              {resumoSelecao(grupos, selecionados)}
             </p>
 
             {resultado ? (

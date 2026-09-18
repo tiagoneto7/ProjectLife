@@ -1,19 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { InscritoRow, Equipa, Despesa, Feedback } from "@/lib/sheets";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import type { InscritoRow, Equipa, Movimento, Feedback } from "@/lib/sheets";
 import { EVENTO, edicaoAtual, edicaoDaData } from "@/lib/evento";
-import { estaValidado, pagou } from "@/lib/estados";
+import { ehVagaSocial, pagou } from "@/lib/estados";
+import { agruparDestinatarios } from "@/components/AdminListaDestinatarios";
 import AdminTabelaInscritos from "@/components/AdminTabelaInscritos";
-import AdminDespesas from "@/components/AdminDespesas";
+import AdminEquipas from "@/components/AdminEquipas";
+import AdminContas from "@/components/AdminContas";
 import AdminFeedback from "@/components/AdminFeedback";
 
-type Separador = "inscricoes" | "despesas" | "feedback";
+type Separador = "inscricoes" | "equipas" | "contas" | "feedback";
 
 type Props = {
   inscritos: InscritoRow[];
   equipas: Equipa[];
-  despesas: Despesa[];
+  movimentos: Movimento[];
   feedback: Feedback[];
 };
 
@@ -21,7 +24,7 @@ const SEM_RESTRICAO = ["nada", "nenhum", "nenhuma"];
 const temRestricao = (texto: string) =>
   Boolean(texto) && !SEM_RESTRICAO.includes(texto.trim().toLowerCase());
 
-export default function AdminPainel({ inscritos, equipas, despesas, feedback }: Props) {
+export default function AdminPainel({ inscritos, equipas, movimentos, feedback }: Props) {
   const atual = edicaoAtual();
 
   // A edição de cada inscrito sai da data de inscrição — nada é lido nem
@@ -51,11 +54,14 @@ export default function AdminPainel({ inscritos, equipas, despesas, feedback }: 
     return comDados ?? atual;
   });
   const [separador, setSeparador] = useState<Separador>("inscricoes");
+  // O ano vive no header, ao lado do "Sair" (ver SiteHeaderClient).
+  const [slotEdicao, setSlotEdicao] = useState<HTMLElement | null>(null);
+  useEffect(() => setSlotEdicao(document.getElementById("admin-edicao-slot")), []);
 
   // Inscrições: fecham alguns dias depois do FIRE (ver DIAS_ATE_ARQUIVAR),
   // por isso uma edição passada é só de leitura.
   const arquivada = edicao !== atual;
-  // Despesas e feedback: editáveis da edição em curso para a frente — uma
+  // Contas e feedback: editáveis da edição em curso para a frente — uma
   // fatura pode chegar depois de as inscrições fecharem, e já se pode gastar
   // dinheiro (ex: sinal do espaço) na edição seguinte. Só as edições
   // anteriores à que está a ser organizada ficam de leitura.
@@ -73,30 +79,52 @@ export default function AdminPainel({ inscritos, equipas, despesas, feedback }: 
     .map((i) => ({ nome: i.nome, texto: i.alergias }));
 
   const equipasDaEdicao = equipas.filter((e) => e.edicao === edicao);
-  const despesasDaEdicao = despesas.filter((d) => d.edicao === edicao);
+  const movimentosDaEdicao = movimentos.filter((m) => m.edicao === edicao);
   const feedbackDaEdicao = feedback.filter((f) => f.edicao === edicao);
-  // Validados = confirmados para o campo (inclui vagas sociais).
-  // Pagos = só quem pagou mesmo — é o que conta para a receita.
-  const totalValidados = visiveis.filter((i) => estaValidado(i.estado)).length;
+  // Pagos = só quem pagou mesmo (sem vagas sociais) — é o que conta para a receita.
   const totalPagos = visiveis.filter((i) => pagou(i.estado)).length;
+  const totalSociais = visiveis.filter((i) => ehVagaSocial(i.estado)).length;
   const receitaCentimos = totalPagos * EVENTO.valorCentimos;
 
-  const paraDestinatario = (i: InscritoRow) => {
-    const emails = [i.email];
-    if (i.menorDe18 === "Sim" && i.emailResponsavel) emails.push(i.emailResponsavel);
-    return { nome: i.nome, emails };
-  };
-  const validados = visiveis.filter((i) => estaValidado(i.estado)).map(paraDestinatario);
-  const pendentes = visiveis.filter((i) => !estaValidado(i.estado)).map(paraDestinatario);
+  const destinatarios = agruparDestinatarios(visiveis);
 
   const separadores: { id: Separador; label: string }[] = [
     { id: "inscricoes", label: "Inscrições" },
-    { id: "despesas", label: "Despesas" },
+    { id: "equipas", label: "Equipas" },
+    { id: "contas", label: "Contas" },
     { id: "feedback", label: "Feedback" },
   ];
 
+  // Seta própria: a nativa do browser deixa uma folga a mais à direita.
+  const seletorEdicao = (
+    <span className="relative inline-flex items-center">
+      <select
+        value={edicao}
+        onChange={(e) => setEdicao(Number(e.target.value))}
+        aria-label="Edição"
+        className="cursor-pointer appearance-none bg-transparent pr-4 text-sm text-inkmuted hover:text-ink focus:outline-none"
+      >
+        {edicoes.map((ano) => (
+          <option key={ano} value={ano}>
+            FIRE {ano}
+            {ano === atual ? " — atual" : ""}
+          </option>
+        ))}
+      </select>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        className="pointer-events-none absolute right-0 h-3 w-3 text-inksoft"
+      >
+        <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
+
   return (
     <div>
+      {slotEdicao && createPortal(<span className="hidden sm:inline-flex">{seletorEdicao}</span>, slotEdicao)}
       <div className="mb-8 flex items-end justify-between gap-3 border-b border-line">
         <div className="flex gap-5 overflow-x-auto sm:gap-6">
           {separadores.map((s) => {
@@ -119,36 +147,13 @@ export default function AdminPainel({ inscritos, equipas, despesas, feedback }: 
           })}
         </div>
 
-        {/* Seta própria: a nativa do browser deixa uma folga a mais à direita. */}
-        <div className="relative mb-2 flex-none">
-          <select
-            value={edicao}
-            onChange={(e) => setEdicao(Number(e.target.value))}
-            aria-label="Edição"
-            className="w-full appearance-none rounded-lg border border-line bg-surface py-1.5 pl-2.5 pr-8 text-sm font-semibold text-ink"
-          >
-            {edicoes.map((ano) => (
-              <option key={ano} value={ano}>
-                FIRE {ano}
-                {ano === atual ? " — atual" : ""}
-              </option>
-            ))}
-          </select>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-            className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-inkmuted"
-          >
-            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </div>
+        {/* Em mobile o "Sair" está dentro do menu, por isso o ano fica aqui. */}
+        <div className="mb-2 flex-none sm:hidden">{seletorEdicao}</div>
       </div>
 
       {separador === "inscricoes" && (
         <AdminTabelaInscritos
           inscritos={visiveis}
-          equipas={equipasDaEdicao}
           restricoesFisicas={restricoesFisicas}
           restricoesAlimentares={restricoesAlimentares}
           alergias={alergias}
@@ -157,11 +162,23 @@ export default function AdminPainel({ inscritos, equipas, despesas, feedback }: 
         />
       )}
 
-      {separador === "despesas" && (
-        <AdminDespesas
-          despesas={despesasDaEdicao}
+      {separador === "equipas" && (
+        <AdminEquipas
+          equipas={equipasDaEdicao}
+          inscritos={visiveis}
+          edicao={edicao}
+          // Como as contas: o lugar final só se sabe depois do FIRE, por isso
+          // as equipas da edição em curso continuam editáveis após o fecho.
+          readOnly={!edicaoEditavel}
+        />
+      )}
+
+      {separador === "contas" && (
+        <AdminContas
+          movimentos={movimentosDaEdicao}
           receitaCentimos={receitaCentimos}
           totalPagos={totalPagos}
+          totalSociais={totalSociais}
           edicao={edicao}
           readOnly={!edicaoEditavel}
         />
@@ -169,9 +186,8 @@ export default function AdminPainel({ inscritos, equipas, despesas, feedback }: 
       {separador === "feedback" && (
         <AdminFeedback
           respostas={feedbackDaEdicao}
-          validados={validados}
-          pendentes={pendentes}
-          totalConvidados={totalValidados}
+          destinatarios={destinatarios}
+          totalConvidados={visiveis.length}
           edicao={edicao}
           readOnly={!edicaoEditavel}
         />

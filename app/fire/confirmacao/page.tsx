@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import InscricaoConfirmada from "@/components/InscricaoConfirmada";
 import { getInscricaoPorLinha } from "@/lib/sheets";
 import { EVENTO } from "@/lib/evento";
-import { estaValidado } from "@/lib/estados";
+import { estaConfirmado } from "@/lib/estados";
 
 export const metadata = {
   title: "Inscrição confirmada | Fire",
@@ -31,7 +31,7 @@ export default async function ConfirmacaoPage({
   let inicialmentePago = false;
   try {
     const inscrito = await getInscricaoPorLinha(rowIndex);
-    inicialmentePago = inscrito ? estaValidado(inscrito.estado) : false;
+    inicialmentePago = inscrito ? estaConfirmado(inscrito.estado) : false;
   } catch (err) {
     console.error("Erro ao verificar estado do pagamento na Sheet:", err);
   }

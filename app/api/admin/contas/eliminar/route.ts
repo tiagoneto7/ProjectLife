@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ADMIN_SESSION_COOKIE, isValidAdminSession } from "@/lib/auth";
-import { eliminarDespesa } from "@/lib/sheets";
+import { eliminarMovimento } from "@/lib/sheets";
 
 export async function POST(req: NextRequest) {
   const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
@@ -17,10 +17,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await eliminarDespesa(rowIndex);
+    await eliminarMovimento(rowIndex);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("Erro ao eliminar a despesa na Google Sheet:", err);
+    console.error("Erro ao eliminar o movimento na Google Sheet:", err);
     return NextResponse.json({ error: "Não foi possível eliminar. Tenta novamente." }, { status: 500 });
   }
 }

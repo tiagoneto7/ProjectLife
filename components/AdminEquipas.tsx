@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { InscritoRow, Equipa } from "@/lib/sheets";
 import { useCloseOnEscape } from "@/lib/useCloseOnEscape";
-import { estaValidado } from "@/lib/estados";
+import { ehVagaSocial, pagou } from "@/lib/estados";
 
 // Cada cor tem um tom claro (fundo do cabeçalho da equipa) e um tom forte
 // (aro de seleção), para o aro ficar sempre bem visível.
@@ -59,7 +59,6 @@ type Props = {
   inscritos: InscritoRow[];
   /** Edição a que estas equipas pertencem — cada FIRE tem as suas. */
   edicao: number;
-  transparente?: boolean;
   /** Edição arquivada: dá para ver as equipas, mas não para alterar. */
   readOnly?: boolean;
 };
@@ -68,11 +67,9 @@ export default function AdminEquipas({
   equipas: equipasIniciais,
   inscritos,
   edicao,
-  transparente,
   readOnly = false,
 }: Props) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [equipas, setEquipas] = useState(equipasIniciais);
   const [atribuicoes, setAtribuicoes] = useState<Record<number, string>>(() =>
     Object.fromEntries(inscritos.map((i) => [i.rowIndex, i.equipaId || ""]))
@@ -89,6 +86,8 @@ export default function AdminEquipas({
   const [editId, setEditId] = useState<string | null>(null);
   const [editNome, setEditNome] = useState("");
   const [editCor, setEditCor] = useState("");
+  const [editMonitores, setEditMonitores] = useState<string[]>([]);
+  const [editLugar, setEditLugar] = useState(0);
   const [aGuardarEdicao, setAGuardarEdicao] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
 
@@ -96,13 +95,6 @@ export default function AdminEquipas({
   // atribuir em ecrãs táteis, onde o drag-and-drop nativo não funciona.
   const [atribuirPara, setAtribuirPara] = useState<InscritoRow | null>(null);
 
-  function fechar() {
-    setOpen(false);
-    setNovoAberto(false);
-    setEditId(null);
-    setErro(null);
-  }
-  useCloseOnEscape(open && !confirmarEliminar && !atribuirPara, fechar);
   useCloseOnEscape(confirmarEliminar, () => setConfirmarEliminar(false));
   useCloseOnEscape(!!atribuirPara, () => setAtribuirPara(null));
 
@@ -119,8 +111,14 @@ export default function AdminEquipas({
     const eq = atribuicoes[i.rowIndex] || "";
     return !eq || !idsValidos.has(eq);
   });
-  const validados = naoAtribuidos.filter((i) => estaValidado(i.estado));
-  const pendentes = naoAtribuidos.filter((i) => !estaValidado(i.estado));
+  const porAtribuir = [
+    { titulo: "Pagos", lista: naoAtribuidos.filter((i) => pagou(i.estado)) },
+    { titulo: "Sociais", lista: naoAtribuidos.filter((i) => ehVagaSocial(i.estado)) },
+    {
+      titulo: "Pendentes",
+      lista: naoAtribuidos.filter((i) => !pagou(i.estado) && !ehVagaSocial(i.estado)),
+    },
+  ];
 
   async function atribuir(rowIndex: number, equipaId: string) {
     const anterior = atribuicoes[rowIndex] || "";
@@ -173,6 +171,11 @@ export default function AdminEquipas({
     setEditId(equipa.id);
     setEditNome(equipa.nome);
     setEditCor(equipa.cor || CORES[0].bg);
+    const nomesMembros = new Set(
+      inscritos.filter((i) => (atribuicoes[i.rowIndex] || "") === equipa.id).map((i) => i.nome)
+    );
+    setEditMonitores(equipa.monitores.filter((m) => nomesMembros.has(m)));
+    setEditLugar(equipa.lugar);
     setConfirmarEliminar(false);
     setErro(null);
   }
@@ -182,10 +185,22 @@ export default function AdminEquipas({
     setAGuardarEdicao(true);
     setErro(null);
 
+    // Descarta quem entretanto saiu da equipa.
+    const nomesMembros = new Set(
+      inscritos.filter((i) => (atribuicoes[i.rowIndex] || "") === editId).map((i) => i.nome)
+    );
+    const monitores = editMonitores.filter((m) => nomesMembros.has(m));
+
     const res = await fetch("/api/admin/equipas/editar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: editId, nome: editNome.trim(), cor: editCor }),
+      body: JSON.stringify({
+        id: editId,
+        nome: editNome.trim(),
+        cor: editCor,
+        monitores,
+        lugar: editLugar,
+      }),
     });
     const data = await res.json();
 
@@ -197,7 +212,11 @@ export default function AdminEquipas({
     }
 
     setEquipas((prev) =>
-      prev.map((e) => (e.id === editId ? { ...e, nome: editNome.trim(), cor: editCor } : e))
+      prev.map((e) =>
+        e.id === editId
+          ? { ...e, nome: editNome.trim(), cor: editCor, monitores, lugar: editLugar }
+          : e
+      )
     );
     setEditId(null);
     router.refresh();
@@ -228,8 +247,9 @@ export default function AdminEquipas({
     router.refresh();
   }
 
-  function chip(inscrito: InscritoRow) {
-    const validado = estaValidado(inscrito.estado);
+  function chip(inscrito: InscritoRow, monitor = false) {
+    // Verde só para quem pagou; vagas sociais e pendentes ficam iguais (não pagaram).
+    const corEstado = pagou(inscrito.estado) ? "bg-green-500" : "bg-amber-400";
 
     if (readOnly) {
       return (
@@ -238,10 +258,11 @@ export default function AdminEquipas({
           className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-sm"
         >
           <span
-            className={`h-1.5 w-1.5 flex-none rounded-full ${validado ? "bg-green-500" : "bg-amber-400"}`}
+            className={`h-1.5 w-1.5 flex-none rounded-full ${corEstado}`}
             aria-hidden="true"
           />
           {primeiroEUltimoNome(inscrito.nome)}
+          {monitor && <span aria-label="Monitor" title="Monitor">★</span>}
         </span>
       );
     }
@@ -258,10 +279,11 @@ export default function AdminEquipas({
         className="flex cursor-grab items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-sm hover:bg-surfacealt active:cursor-grabbing"
       >
         <span
-          className={`h-1.5 w-1.5 flex-none rounded-full ${validado ? "bg-green-500" : "bg-amber-400"}`}
+          className={`h-1.5 w-1.5 flex-none rounded-full ${corEstado}`}
           aria-hidden="true"
         />
         {primeiroEUltimoNome(inscrito.nome)}
+        {monitor && <span aria-label="Monitor" title="Monitor">★</span>}
       </button>
     );
   }
@@ -285,221 +307,305 @@ export default function AdminEquipas({
 
   const equipaAEliminar = equipas.find((e) => e.id === editId) ?? null;
 
+  const atribuidos = inscritos.length - naoAtribuidos.length;
+  const percentagem = inscritos.length > 0 ? Math.round((atribuidos / inscritos.length) * 100) : 0;
+  const classificacao = equipas
+    .filter((e) => e.lugar > 0)
+    .sort((a, b) => a.lugar - b.lugar);
+  const opcoesLugar = Array.from({ length: Math.max(equipas.length, 3) }, (_, i) => i + 1);
+  const MEDALHAS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={
-          transparente
-            ? "rounded-lg border border-line bg-surface px-3 py-1.5 text-center text-sm font-medium text-ink hover:bg-surfacealt"
-            : "rounded-lg border border-line px-3 py-1.5 text-left text-sm font-medium text-ink hover:bg-surfacealt"
-        }
-      >
-        Equipas
-      </button>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-x-5 rounded-xl border border-line bg-surfacealt px-4 py-2 text-sm text-inkmuted">
+          <span>
+            <b className="font-semibold text-ink">{equipas.length}</b>{" "}
+            {equipas.length === 1 ? "equipa" : "equipas"}
+          </span>
+          <span className="h-4 w-px bg-line" aria-hidden="true" />
+          <span>
+            <b className="font-semibold text-ink">{atribuidos}</b> de {inscritos.length} atribuídos
+          </span>
+          <span className="hidden h-1.5 w-24 overflow-hidden rounded bg-line sm:block" aria-hidden="true">
+            <span className="block h-full rounded bg-brand" style={{ width: `${percentagem}%` }} />
+          </span>
+        </div>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={fechar}
-        >
-          <div
-            className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-xl border border-line bg-surface p-5 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
+        {classificacao.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-line bg-surfacealt px-4 py-2 text-sm">
+            <span className="text-[11px] uppercase tracking-wide text-inksoft">Classificação</span>
+            {classificacao.map((e, i) => (
+              <span key={e.id} className="flex items-center gap-2">
+                {i > 0 && <span className="text-inksoft">·</span>}
+                <span className={e.lugar === 1 ? "font-semibold text-ink" : "text-inkmuted"}>
+                  {MEDALHAS[e.lugar] ?? `${e.lugar}º`} {e.nome}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <span className="flex-1" />
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => setNovoAberto(true)}
+            className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink hover:bg-branddark"
           >
-            <div className="flex flex-none items-center justify-between">
-              <p className="text-sm font-semibold text-ink">Construtor de equipas</p>
-              <button type="button" onClick={fechar} className="text-sm text-inkmuted hover:text-ink">
-                Fechar
-              </button>
+            + Nova equipa
+          </button>
+        )}
+      </div>
+
+      {erro && <p className="mb-3 text-sm text-red-600">{erro}</p>}
+
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
+        {/* Por atribuir — fica visível ao fazer scroll, para dar para arrastar para qualquer equipa */}
+        <aside
+          {...dropzoneProps("nao-atribuidos", () => arrastando !== null && atribuir(arrastando, ""))}
+          className={
+            "rounded-xl border p-3 md:sticky md:top-4 md:max-h-[calc(100vh-2rem)] md:w-60 md:flex-none md:overflow-y-auto " +
+            (sobreZona === "nao-atribuidos" ? "border-branddark bg-surfacealt" : "border-line")
+          }
+        >
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-inksoft">
+            Por atribuir ({naoAtribuidos.length})
+          </p>
+          {porAtribuir.map((grupo) => (
+            <div key={grupo.titulo} className="mb-3 last:mb-0">
+              <p className="mb-1.5 text-[11px] text-inksoft">{grupo.titulo}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {grupo.lista.length === 0 ? (
+                  <p className="text-xs text-inksoft">—</p>
+                ) : (
+                  grupo.lista.map((i) => chip(i))
+                )}
+              </div>
             </div>
+          ))}
+        </aside>
 
-            {erro && <p className="mt-2 flex-none text-sm text-red-600">{erro}</p>}
+        <div className="grid flex-1 items-start gap-3 sm:grid-cols-2">
+          {equipas.map((equipa) => {
+            const membros = inscritos.filter((i) => (atribuicoes[i.rowIndex] || "") === equipa.id);
+            const emEdicao = editId === equipa.id;
+            // Só conta como monitor quem ainda é membro — se mudar de equipa, deixa de aparecer.
+            const nomesMembros = new Set(membros.map((i) => i.nome));
+            const monitores = equipa.monitores.filter((m) => nomesMembros.has(m));
+            const candidatosMonitor = membros.filter((i) => !editMonitores.includes(i.nome));
 
-            <div className="mt-4 flex flex-1 flex-col gap-4 overflow-y-auto sm:flex-row sm:overflow-hidden">
-              {/* Não atribuídos */}
+            const cabecalho = (
+              <>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-sm font-semibold" style={{ color: COR_TEXTO_CABECALHO }}>
+                    {equipa.nome}
+                  </span>
+                </span>
+                <span className="flex-none text-xs" style={{ color: COR_TEXTO_CABECALHO }}>
+                  {membros.length} {membros.length === 1 ? "membro" : "membros"}
+                  {!readOnly && " · editar ✎"}
+                </span>
+              </>
+            );
+
+            return (
               <div
-                {...dropzoneProps("nao-atribuidos", () => arrastando !== null && atribuir(arrastando, ""))}
+                key={equipa.id}
                 className={
-                  "flex max-h-48 w-full flex-none flex-col overflow-y-auto rounded-lg border p-2 sm:max-h-none sm:w-48 " +
-                  (sobreZona === "nao-atribuidos"
-                    ? "border-branddark bg-surfacealt"
-                    : "border-line")
+                  "overflow-hidden rounded-xl border border-line " +
+                  (emEdicao ? "ring-2 ring-branddark/30" : "")
                 }
               >
-                <p className="mb-1.5 flex-none px-1 text-xs font-semibold uppercase tracking-wide text-inksoft">
-                  Validados ({validados.length})
-                </p>
-                <div className="mb-3 flex flex-none flex-wrap gap-1.5 px-1">
-                  {validados.length === 0 ? (
-                    <p className="text-xs text-inksoft">—</p>
-                  ) : (
-                    validados.map(chip)
-                  )}
-                </div>
-                <p className="mb-1.5 flex-none px-1 text-xs font-semibold uppercase tracking-wide text-inksoft">
-                  Pendentes ({pendentes.length})
-                </p>
-                <div className="flex flex-none flex-wrap gap-1.5 px-1">
-                  {pendentes.length === 0 ? (
-                    <p className="text-xs text-inksoft">—</p>
-                  ) : (
-                    pendentes.map(chip)
-                  )}
-                </div>
-              </div>
-
-              {/* Equipas */}
-              <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
-                {equipas.map((equipa) => {
-                  const membros = inscritos.filter((i) => (atribuicoes[i.rowIndex] || "") === equipa.id);
-                  const emEdicao = editId === equipa.id;
-
-                  return (
-                    <div key={equipa.id} className="rounded-lg border border-line">
-                      {readOnly ? (
-                        <div
-                          className="flex w-full items-center justify-between rounded-t-lg px-3 py-2"
-                          style={{ backgroundColor: equipa.cor || CORES[0].bg }}
-                        >
-                          <span
-                            className="text-sm font-semibold"
-                            style={{ color: COR_TEXTO_CABECALHO }}
-                          >
-                            {equipa.nome}
-                          </span>
-                          <span className="text-xs" style={{ color: COR_TEXTO_CABECALHO }}>
-                            {membros.length} {membros.length === 1 ? "membro" : "membros"}
-                          </span>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => (emEdicao ? setEditId(null) : abrirEdicao(equipa))}
-                          title="Clicar para editar nome e cor"
-                          className="flex w-full items-center justify-between rounded-t-lg px-3 py-2 text-left"
-                          style={{ backgroundColor: equipa.cor || CORES[0].bg }}
-                        >
-                          <span
-                            className="text-sm font-semibold"
-                            style={{ color: COR_TEXTO_CABECALHO }}
-                          >
-                            {equipa.nome}
-                          </span>
-                          <span className="text-xs" style={{ color: COR_TEXTO_CABECALHO }}>
-                            {membros.length} {membros.length === 1 ? "membro" : "membros"} · editar ✎
-                          </span>
-                        </button>
-                      )}
-
-                      {emEdicao && (
-                        <div className="space-y-2 border-b border-line bg-surfacealt p-3">
-                          <input
-                            type="text"
-                            autoFocus
-                            value={editNome}
-                            onChange={(e) => setEditNome(e.target.value)}
-                            placeholder="Nome da equipa"
-                            className="w-full rounded border border-line px-2.5 py-1.5 text-sm"
-                            onKeyDown={(e) => e.key === "Enter" && guardarEdicao()}
-                          />
-                          <SeletorCor valor={editCor} onEscolher={setEditCor} />
-
-                          <div className="flex items-center justify-between pt-1">
-                            <button
-                              type="button"
-                              onClick={() => setConfirmarEliminar(true)}
-                              className="text-xs text-red-600 hover:underline"
-                            >
-                              Eliminar equipa
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setEditId(null)}
-                                className="text-sm text-inkmuted hover:text-ink"
-                              >
-                                Cancelar
-                              </button>
-                              <button
-                                type="button"
-                                disabled={aGuardarEdicao || !editNome.trim()}
-                                onClick={guardarEdicao}
-                                className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink disabled:opacity-50"
-                              >
-                                {aGuardarEdicao ? "A guardar…" : "Guardar"}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div
-                        {...dropzoneProps(equipa.id, () => arrastando !== null && atribuir(arrastando, equipa.id))}
-                        className={
-                          "flex min-h-[56px] flex-wrap gap-1.5 rounded-b-lg p-2.5 " +
-                          (sobreZona === equipa.id ? "bg-surfacealt" : "")
-                        }
-                      >
-                        {membros.length === 0 ? (
-                          <p className="text-xs text-inksoft">
-                            {readOnly ? "Sem membros." : "Arrasta inscritos para aqui."}
-                          </p>
-                        ) : (
-                          membros.map(chip)
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {readOnly ? null : novoAberto ? (
-                  <div className="space-y-2 rounded-lg border border-dashed border-line p-3">
-                    <input
-                      type="text"
-                      autoFocus
-                      value={novoNome}
-                      onChange={(e) => setNovoNome(e.target.value)}
-                      placeholder="Nome da equipa"
-                      className="w-full rounded border border-line px-2.5 py-1.5 text-sm"
-                      onKeyDown={(e) => e.key === "Enter" && criarEquipa()}
-                    />
-                    <SeletorCor valor={novaCor} onEscolher={setNovaCor} />
-                    <div className="flex justify-end gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setNovoAberto(false)}
-                        className="text-sm text-inkmuted hover:text-ink"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        disabled={aCriar || !novoNome.trim()}
-                        onClick={criarEquipa}
-                        className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink disabled:opacity-50"
-                      >
-                        {aCriar ? "A criar…" : "Criar"}
-                      </button>
-                    </div>
+                {readOnly ? (
+                  <div
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2"
+                    style={{ backgroundColor: equipa.cor || CORES[0].bg }}
+                  >
+                    {cabecalho}
                   </div>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setNovoAberto(true)}
-                    className="rounded-lg border border-dashed border-line px-3 py-2 text-sm font-medium text-inkmuted hover:bg-surfacealt hover:text-ink"
+                    onClick={() => (emEdicao ? setEditId(null) : abrirEdicao(equipa))}
+                    title="Clicar para editar"
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+                    style={{ backgroundColor: equipa.cor || CORES[0].bg }}
                   >
-                    + Nova equipa
+                    {cabecalho}
                   </button>
                 )}
+
+                {emEdicao && (
+                  <div className="space-y-2.5 border-b border-line bg-surfacealt p-3">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={editNome}
+                      onChange={(e) => setEditNome(e.target.value)}
+                      aria-label="Nome da equipa"
+                      className="w-full rounded border border-line px-2.5 py-1.5 text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && guardarEdicao()}
+                    />
+                    <SeletorCor valor={editCor} onEscolher={setEditCor} />
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-medium text-inkmuted">Monitores</p>
+                      <div className="flex flex-wrap items-center gap-1.5 rounded border border-line bg-white px-2 py-1.5">
+                        {editMonitores.map((m) => (
+                          <span
+                            key={m}
+                            className="flex items-center gap-1 rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-white"
+                          >
+                            ★ {primeiroEUltimoNome(m)}
+                            <button
+                              type="button"
+                              onClick={() => setEditMonitores((prev) => prev.filter((x) => x !== m))}
+                              aria-label={`Remover ${m}`}
+                              className="ml-0.5 opacity-60 hover:opacity-100"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        {/* Os monitores escolhem-se entre os membros desta equipa. */}
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const nome = e.target.value;
+                            if (nome) setEditMonitores((prev) => [...prev, nome]);
+                          }}
+                          aria-label="Adicionar monitor"
+                          disabled={candidatosMonitor.length === 0}
+                          className="min-w-[140px] flex-1 bg-transparent text-sm text-inkmuted outline-none disabled:opacity-60"
+                        >
+                          <option value="">
+                            {membros.length === 0
+                              ? "Primeiro junta membros à equipa"
+                              : candidatosMonitor.length === 0
+                                ? "Todos os membros já são monitores"
+                                : "Escolher membro…"}
+                          </option>
+                          {candidatosMonitor.map((i) => (
+                            <option key={i.rowIndex} value={i.nome}>
+                              {i.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[11px] font-medium text-inkmuted">Lugar final</p>
+                      <div className="inline-flex flex-wrap gap-0.5 rounded-xl border border-line bg-white p-0.5">
+                        {[0, ...opcoesLugar].map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => setEditLugar(n)}
+                            aria-pressed={editLugar === n}
+                            className={
+                              "rounded-lg px-2.5 py-1 text-sm transition " +
+                              (editLugar === n
+                                ? "bg-surfacealt font-semibold text-ink shadow-sm"
+                                : "text-inkmuted hover:text-ink")
+                            }
+                          >
+                            {n === 0 ? "—" : `${n}º`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setConfirmarEliminar(true)}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Eliminar equipa
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditId(null)}
+                          className="text-sm text-inkmuted hover:text-ink"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={aGuardarEdicao || !editNome.trim()}
+                          onClick={guardarEdicao}
+                          className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink disabled:opacity-50"
+                        >
+                          {aGuardarEdicao ? "A guardar…" : "Guardar"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  {...dropzoneProps(equipa.id, () => arrastando !== null && atribuir(arrastando, equipa.id))}
+                  className={
+                    "flex min-h-[72px] flex-wrap content-start gap-1.5 p-2.5 " +
+                    (sobreZona === equipa.id ? "bg-surfacealt" : "")
+                  }
+                >
+                  {membros.length === 0 ? (
+                    <p className="text-xs text-inksoft">
+                      {readOnly ? "Sem membros." : "Arrasta inscritos para aqui."}
+                    </p>
+                  ) : (
+                    // Monitores primeiro, marcados com ★.
+                    [...membros]
+                      .sort((x, y) => Number(monitores.includes(y.nome)) - Number(monitores.includes(x.nome)))
+                      .map((i) => chip(i, monitores.includes(i.nome)))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {readOnly ? (
+            equipas.length === 0 && (
+              <p className="text-sm text-inksoft">Esta edição não tem equipas guardadas.</p>
+            )
+          ) : novoAberto ? (
+            <div className="space-y-2 rounded-xl border border-dashed border-line p-3">
+              <input
+                type="text"
+                autoFocus
+                value={novoNome}
+                onChange={(e) => setNovoNome(e.target.value)}
+                aria-label="Nome da nova equipa"
+                placeholder="Nome da equipa"
+                className="w-full rounded border border-line px-2.5 py-1.5 text-sm"
+                onKeyDown={(e) => e.key === "Enter" && criarEquipa()}
+              />
+              <SeletorCor valor={novaCor} onEscolher={setNovaCor} />
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setNovoAberto(false)}
+                  className="text-sm text-inkmuted hover:text-ink"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={aCriar || !novoNome.trim()}
+                  onClick={criarEquipa}
+                  className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink disabled:opacity-50"
+                >
+                  {aCriar ? "A criar…" : "Criar"}
+                </button>
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
-      )}
+      </div>
 
       {confirmarEliminar && equipaAEliminar && (
         <div
@@ -597,6 +703,6 @@ export default function AdminEquipas({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

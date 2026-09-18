@@ -3,14 +3,12 @@
 import { useState } from "react";
 import type { Feedback } from "@/lib/sheets";
 import AdminPedirFeedback from "@/components/AdminPedirFeedback";
-import AdminVista, { useVista } from "@/components/AdminVista";
+import type { GruposDestinatarios } from "@/components/AdminListaDestinatarios";
 
-type Destinatario = { nome: string; emails: string[] };
 
 type Props = {
   respostas: Feedback[];
-  validados: Destinatario[];
-  pendentes: Destinatario[];
+  destinatarios: GruposDestinatarios;
   totalConvidados: number;
   edicao: number;
   readOnly?: boolean;
@@ -24,14 +22,12 @@ function dataCurta(valor: string): string {
 
 export default function AdminFeedback({
   respostas,
-  validados,
-  pendentes,
+  destinatarios,
   totalConvidados,
   edicao,
   readOnly = false,
 }: Props) {
   const [copiado, setCopiado] = useState(false);
-  const [vista, mudarVista] = useVista("feedback", "grelha");
 
   const comNota = respostas.filter((r) => r.avaliacao > 0);
   const media =
@@ -61,20 +57,63 @@ export default function AdminFeedback({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <AdminVista vista={vista} onMudar={mudarVista} />
-        <span className="flex-1" />
-        <div className="flex min-w-0 items-center gap-2 rounded-lg border border-line bg-surfacealt px-3 py-1.5 text-xs text-inkmuted">
-          <span className="truncate">{linkPublico}</span>
-          <button
-            type="button"
-            onClick={copiarLink}
-            className="flex-none font-semibold text-branddark hover:underline"
-          >
-            {copiado ? "Copiado!" : "Copiar"}
-          </button>
+      <div className="mb-4 flex flex-wrap items-start gap-3">
+        {respostas.length > 0 && (
+          <div className="flex w-full flex-wrap items-center gap-x-8 gap-y-3 rounded-xl border border-line bg-surfacealt px-5 py-3 lg:w-auto lg:flex-1">
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-inksoft">Média geral</p>
+              <p className="text-xl font-bold tabular-nums text-ink">
+                {media.toLocaleString("pt-PT", { maximumFractionDigits: 1 })}
+                <span className="ml-1 text-xs font-medium text-inksoft">/ 5</span>
+                <span className="ml-2 text-sm font-normal text-branddark" aria-hidden="true">
+                  {"★".repeat(Math.round(media))}
+                  <span className="text-inksoft">{"★".repeat(5 - Math.round(media))}</span>
+                </span>
+              </p>
+            </div>
+            <span className="hidden h-10 w-px bg-line sm:block" aria-hidden="true" />
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-inksoft">Respostas</p>
+              <p className="text-xl font-bold tabular-nums text-ink">
+                {respostas.length}
+                <span className="ml-1 text-xs font-medium text-inksoft">
+                  de {totalConvidados} ({taxa}%)
+                </span>
+              </p>
+            </div>
+            <span className="hidden h-10 w-px bg-line sm:block" aria-hidden="true" />
+            <div className="min-w-[200px] flex-1 space-y-0.5">
+              {distribuicao.map((d) => (
+                <div key={d.nota} className="flex items-center gap-2 text-[11px] text-inkmuted">
+                  <span className="w-6 flex-none">{d.nota} ★</span>
+                  <span className="h-1.5 flex-1 overflow-hidden rounded bg-line">
+                    <span
+                      className="block h-full rounded bg-brand"
+                      style={{ width: `${(d.total / maxDist) * 100}%` }}
+                    />
+                  </span>
+                  <span className="w-4 flex-none text-right tabular-nums">{d.total}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {respostas.length === 0 && <span className="flex-1" />}
+
+        <div className="flex w-full flex-col gap-1.5 sm:w-auto">
+          <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-line bg-surfacealt px-3 py-1.5 text-xs text-inkmuted">
+            <span className="truncate">{linkPublico}</span>
+            <button
+              type="button"
+              onClick={copiarLink}
+              className="flex-none font-semibold text-branddark hover:underline"
+            >
+              {copiado ? "Copiado!" : "Copiar"}
+            </button>
+          </div>
+          {!readOnly && <AdminPedirFeedback grupos={destinatarios} />}
         </div>
-        {!readOnly && <AdminPedirFeedback validados={validados} pendentes={pendentes} />}
       </div>
 
       {respostas.length === 0 ? (
@@ -86,45 +125,7 @@ export default function AdminFeedback({
         </div>
       ) : (
         <div>
-          <div className="mb-4 grid gap-2.5 sm:grid-cols-2">
-            <div className="rounded-xl border border-line bg-surfacealt px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wide text-inksoft">Média geral</p>
-              <p className="mt-0.5 text-xl font-bold tabular-nums text-ink">
-                {media.toLocaleString("pt-PT", { maximumFractionDigits: 1 })}
-                <span className="ml-1 text-xs font-medium text-inksoft">/ 5</span>
-              </p>
-              <p className="mt-0.5 text-sm text-branddark" aria-hidden="true">
-                {"★".repeat(Math.round(media))}
-                <span className="text-inksoft">{"★".repeat(5 - Math.round(media))}</span>
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-line bg-surfacealt px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wide text-inksoft">Respostas</p>
-              <p className="mt-0.5 text-xl font-bold tabular-nums text-ink">
-                {respostas.length}
-                <span className="ml-1 text-xs font-medium text-inksoft">
-                  de {totalConvidados} ({taxa}%)
-                </span>
-              </p>
-              <div className="mt-2 space-y-1">
-                {distribuicao.map((d) => (
-                  <div key={d.nota} className="flex items-center gap-2 text-[11px] text-inkmuted">
-                    <span className="w-6 flex-none">{d.nota} ★</span>
-                    <span className="h-1.5 flex-1 overflow-hidden rounded bg-line">
-                      <span
-                        className="block h-full rounded bg-brand"
-                        style={{ width: `${(d.total / maxDist) * 100}%` }}
-                      />
-                    </span>
-                    <span className="w-4 flex-none text-right tabular-nums">{d.total}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className={vista === "grelha" ? "grid gap-2.5 md:grid-cols-2" : "space-y-2.5"}>
+          <div className="grid gap-2.5 md:grid-cols-2">
             {respostas.map((r) => {
               const abertas = [
                 { label: "O que mais gostou", texto: r.gostou },
