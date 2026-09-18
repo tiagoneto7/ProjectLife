@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import { ADMIN_SESSION_COOKIE, isValidAdminSession } from "@/lib/auth";
-import { getInscricoes, getEquipas } from "@/lib/sheets";
+import { getInscricoes, getEquipas, getDespesas, getFeedback } from "@/lib/sheets";
 import AdminLoginForm from "@/components/AdminLoginForm";
-import AdminTabelaInscritos from "@/components/AdminTabelaInscritos";
+import AdminPainel from "@/components/AdminPainel";
 
 export const dynamic = "force-dynamic";
 
@@ -13,32 +13,20 @@ export default async function AdminPage() {
     return <AdminLoginForm />;
   }
 
-  const [inscritos, equipas] = await Promise.all([getInscricoes(), getEquipas()]);
-
-  const semRestricao = ["nada", "nenhum", "nenhuma"];
-  const temRestricao = (texto: string) =>
-    texto && !semRestricao.includes(texto.trim().toLowerCase());
-
-  const restricoesFisicas = inscritos
-    .filter((i) => temRestricao(i.restricoesAtividadeFisica))
-    .map((i) => ({ nome: i.nome, texto: i.restricoesAtividadeFisica }));
-
-  const restricoesAlimentares = inscritos
-    .filter((i) => temRestricao(i.restricoesAlimentares))
-    .map((i) => ({ nome: i.nome, texto: i.restricoesAlimentares }));
-
-  const alergias = inscritos
-    .filter((i) => temRestricao(i.alergias))
-    .map((i) => ({ nome: i.nome, texto: i.alergias }));
+  const [inscritos, equipas, despesas, feedback] = await Promise.all([
+    getInscricoes(),
+    getEquipas(),
+    getDespesas(),
+    getFeedback(),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-3 py-10">
-      <AdminTabelaInscritos
+      <AdminPainel
         inscritos={inscritos}
         equipas={equipas}
-        restricoesFisicas={restricoesFisicas}
-        restricoesAlimentares={restricoesAlimentares}
-        alergias={alergias}
+        despesas={despesas}
+        feedback={feedback}
       />
     </div>
   );

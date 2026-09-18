@@ -9,14 +9,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sessão inválida. Volta a entrar." }, { status: 401 });
   }
 
-  const { nome, cor } = await req.json().catch(() => ({}));
+  const { nome, cor, edicao } = await req.json().catch(() => ({}));
 
-  if (typeof nome !== "string" || !nome.trim() || typeof cor !== "string" || !cor.trim()) {
+  if (
+    typeof nome !== "string" ||
+    !nome.trim() ||
+    typeof cor !== "string" ||
+    !cor.trim() ||
+    typeof edicao !== "number" ||
+    !Number.isFinite(edicao)
+  ) {
     return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
   }
 
   try {
-    const equipa = await criarEquipa(nome.trim(), cor.trim());
+    const equipa = await criarEquipa(nome.trim(), cor.trim(), edicao);
     return NextResponse.json({ ok: true, equipa });
   } catch (err) {
     console.error("Erro ao criar equipa na Google Sheet:", err);

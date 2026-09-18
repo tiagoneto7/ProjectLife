@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeClient } from "@/lib/stripe";
+import { EVENTO } from "@/lib/evento";
 
-const VALOR_FIRE_CENTIMOS = 3500;
+const VALOR_FIRE_CENTIMOS = EVENTO.valorCentimos;
 
 export async function POST(req: NextRequest) {
   const { rowIndex, email, nome } = await req.json().catch(() => ({}));

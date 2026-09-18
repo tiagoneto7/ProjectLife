@@ -42,7 +42,7 @@ export default function AdminResumoRestricoes({
             : "rounded-lg border border-line px-3 py-1.5 text-left text-sm font-medium text-ink hover:bg-surfacealt"
         }
       >
-        Resumo
+        Resumo de saúde
       </button>
 
       {open && (

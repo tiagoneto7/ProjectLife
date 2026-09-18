@@ -1,12 +1,6 @@
 import { Resend } from "resend";
 import type { InscricaoInput } from "./validation";
-
-// Dados do evento e pagamento — muda aqui de ano para ano.
-const EVENTO = {
-  datas: "11, 12 e 13 de Setembro, 2026",
-  local: "Rua Constantina Fernandes Nº 15, Poceirão",
-  valor: "35€",
-};
+import { EVENTO } from "./evento";
 
 const PAGAMENTO = {
   mbway: "+351 937780027",
@@ -121,7 +115,7 @@ export async function sendConfirmationEmail(data: InscricaoInput, rowIndex: numb
           </div>
         </div>
 
-        <p style="color:#5a5a5a; margin: 32px 0 4px;">📅 ${EVENTO.datas}</p>
+        <p style="color:#5a5a5a; margin: 32px 0 4px;">📅 ${EVENTO.datasLabel}</p>
         <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>
 
         <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
@@ -253,7 +247,7 @@ export async function sendPaymentConfirmationEmail(data: PagamentoConfirmadoData
         <p style="color:#5a5a5a;">Confirmamos que recebemos o teu pagamento de ${EVENTO.valor}.</p>
         <p style="color:#5a5a5a;">A tua inscrição no Fire está validada — Até já!</p>
 
-        <p style="color:#5a5a5a; margin: 24px 0 4px;">📅 ${EVENTO.datas}</p>
+        <p style="color:#5a5a5a; margin: 24px 0 4px;">📅 ${EVENTO.datasLabel}</p>
         <p style="color:#5a5a5a; margin: 0 0 20px;">📍 ${EVENTO.local}</p>
 
         <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
@@ -384,6 +378,65 @@ export async function sendDocumentosFinais(emails: string[]) {
     `;
 
   const subject = "FIRE 2026 — Informações";
+
+  // Resend só aceita até 100 emails por chamada ao batch send.
+  for (let i = 0; i < emails.length; i += 100) {
+    const lote = emails.slice(i, i + 100);
+    await resend.batch.send(lote.map((to) => ({ from, to, subject, html })));
+  }
+}
+
+/**
+ * Pede feedback aos participantes, com link para o formulário público.
+ * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
+ */
+export async function sendPedidoFeedback(emails: string[]) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.FROM_EMAIL;
+
+  if (!apiKey || !from) {
+    throw new Error("Variáveis de ambiente de email em falta (RESEND_API_KEY / FROM_EMAIL).");
+  }
+  if (emails.length === 0) return;
+
+  const resend = new Resend(apiKey);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const linkFeedback = `${siteUrl}/fire/feedback`;
+
+  const html = `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
+
+        <table style="border-collapse:collapse; margin: 8px 0 24px;">
+          <tr>
+            <td style="padding-right:16px; vertical-align:middle;">
+              <img src="${siteUrl}/fire-logo.webp" alt="Fire" width="96" height="96" style="border-radius:50%; display:block;" />
+            </td>
+            <td style="vertical-align:middle;">
+              <h1 style="margin:0; font-size: 24px; color:#1F2430;">Como foi o teu FIRE?</h1>
+            </td>
+          </tr>
+        </table>
+
+        <p style="color:#5a5a5a;">Obrigado por teres estado connosco no FIRE ${EVENTO.edicao}!</p>
+        <p style="color:#5a5a5a;">Queremos saber a tua opinião para que nos possas ajudar a preparar a próxima edição.</p>
+
+        <div style="text-align:center; margin: 28px 0;">
+          <a href="${linkFeedback}" style="display:inline-block; padding:12px 24px; background:#7AA002; color:#ffffff; font-weight:600; text-decoration:none; border-radius:8px; font-size:15px;">Dar o meu feedback</a>
+        </div>
+
+        <p style="color:#9a9a9a; font-size:13px;">Podes responder de forma anónima — o nome é opcional.</p>
+
+        <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
+        </div>
+
+        <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>
+      </div>
+    `;
+
+  const subject = `FIRE ${EVENTO.edicao} — conta-nos como foi`;
 
   // Resend só aceita até 100 emails por chamada ao batch send.
   for (let i = 0; i < emails.length; i += 100) {

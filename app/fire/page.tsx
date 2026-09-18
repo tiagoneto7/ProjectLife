@@ -1,5 +1,6 @@
 import Image from "next/image";
 import InscricaoForm from "@/components/InscricaoForm";
+import { EVENTO } from "@/lib/evento";
 
 export const metadata = {
   title: "Inscrição | Fire",
@@ -22,15 +23,15 @@ export default function FirePage() {
           <dl className="space-y-1.5 text-center text-inkmuted sm:text-left">
             <div>
               <dt className="sr-only">Data</dt>
-              <dd>11, 12 e 13 de Setembro, 2026</dd>
+              <dd>{EVENTO.datasLabel}</dd>
             </div>
             <div>
               <dt className="sr-only">Morada</dt>
-              <dd>Rua Constantina Fernandes Nº 15, Poceirão</dd>
+              <dd>{EVENTO.local}</dd>
             </div>
             <div>
               <dt className="sr-only">Valor</dt>
-              <dd className="font-semibold text-branddark">35€</dd>
+              <dd className="font-semibold text-branddark">{EVENTO.valor}</dd>
             </div>
           </dl>
         </header>

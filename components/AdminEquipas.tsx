@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { InscritoRow, Equipa } from "@/lib/sheets";
 import { useCloseOnEscape } from "@/lib/useCloseOnEscape";
+import { estaValidado } from "@/lib/estados";
 
 // Cada cor tem um tom claro (fundo do cabeçalho da equipa) e um tom forte
 // (aro de seleção), para o aro ficar sempre bem visível.
@@ -56,10 +57,20 @@ function SeletorCor({
 type Props = {
   equipas: Equipa[];
   inscritos: InscritoRow[];
+  /** Edição a que estas equipas pertencem — cada FIRE tem as suas. */
+  edicao: number;
   transparente?: boolean;
+  /** Edição arquivada: dá para ver as equipas, mas não para alterar. */
+  readOnly?: boolean;
 };
 
-export default function AdminEquipas({ equipas: equipasIniciais, inscritos, transparente }: Props) {
+export default function AdminEquipas({
+  equipas: equipasIniciais,
+  inscritos,
+  edicao,
+  transparente,
+  readOnly = false,
+}: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [equipas, setEquipas] = useState(equipasIniciais);
@@ -108,8 +119,8 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
     const eq = atribuicoes[i.rowIndex] || "";
     return !eq || !idsValidos.has(eq);
   });
-  const validados = naoAtribuidos.filter((i) => i.estado.toLowerCase() === "pago");
-  const pendentes = naoAtribuidos.filter((i) => i.estado.toLowerCase() !== "pago");
+  const validados = naoAtribuidos.filter((i) => estaValidado(i.estado));
+  const pendentes = naoAtribuidos.filter((i) => !estaValidado(i.estado));
 
   async function atribuir(rowIndex: number, equipaId: string) {
     const anterior = atribuicoes[rowIndex] || "";
@@ -140,7 +151,7 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
     const res = await fetch("/api/admin/equipas/criar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome: novoNome.trim(), cor: novaCor }),
+      body: JSON.stringify({ nome: novoNome.trim(), cor: novaCor, edicao }),
     });
     const data = await res.json();
 
@@ -218,7 +229,23 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
   }
 
   function chip(inscrito: InscritoRow) {
-    const pago = inscrito.estado.toLowerCase() === "pago";
+    const validado = estaValidado(inscrito.estado);
+
+    if (readOnly) {
+      return (
+        <span
+          key={inscrito.rowIndex}
+          className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-sm"
+        >
+          <span
+            className={`h-1.5 w-1.5 flex-none rounded-full ${validado ? "bg-green-500" : "bg-amber-400"}`}
+            aria-hidden="true"
+          />
+          {primeiroEUltimoNome(inscrito.nome)}
+        </span>
+      );
+    }
+
     return (
       <button
         key={inscrito.rowIndex}
@@ -231,7 +258,7 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
         className="flex cursor-grab items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink shadow-sm hover:bg-surfacealt active:cursor-grabbing"
       >
         <span
-          className={`h-1.5 w-1.5 flex-none rounded-full ${pago ? "bg-green-500" : "bg-amber-400"}`}
+          className={`h-1.5 w-1.5 flex-none rounded-full ${validado ? "bg-green-500" : "bg-amber-400"}`}
           aria-hidden="true"
         />
         {primeiroEUltimoNome(inscrito.nome)}
@@ -240,6 +267,8 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
   }
 
   function dropzoneProps(zona: string, onDrop: () => void) {
+    if (readOnly) return {};
+
     return {
       onDragOver: (e: React.DragEvent) => {
         e.preventDefault();
@@ -331,20 +360,40 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
 
                   return (
                     <div key={equipa.id} className="rounded-lg border border-line">
-                      <button
-                        type="button"
-                        onClick={() => (emEdicao ? setEditId(null) : abrirEdicao(equipa))}
-                        title="Clicar para editar nome e cor"
-                        className="flex w-full items-center justify-between rounded-t-lg px-3 py-2 text-left"
-                        style={{ backgroundColor: equipa.cor || CORES[0].bg }}
-                      >
-                        <span className="text-sm font-semibold" style={{ color: COR_TEXTO_CABECALHO }}>
-                          {equipa.nome}
-                        </span>
-                        <span className="text-xs" style={{ color: COR_TEXTO_CABECALHO }}>
-                          {membros.length} {membros.length === 1 ? "membro" : "membros"} · editar ✎
-                        </span>
-                      </button>
+                      {readOnly ? (
+                        <div
+                          className="flex w-full items-center justify-between rounded-t-lg px-3 py-2"
+                          style={{ backgroundColor: equipa.cor || CORES[0].bg }}
+                        >
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: COR_TEXTO_CABECALHO }}
+                          >
+                            {equipa.nome}
+                          </span>
+                          <span className="text-xs" style={{ color: COR_TEXTO_CABECALHO }}>
+                            {membros.length} {membros.length === 1 ? "membro" : "membros"}
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => (emEdicao ? setEditId(null) : abrirEdicao(equipa))}
+                          title="Clicar para editar nome e cor"
+                          className="flex w-full items-center justify-between rounded-t-lg px-3 py-2 text-left"
+                          style={{ backgroundColor: equipa.cor || CORES[0].bg }}
+                        >
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: COR_TEXTO_CABECALHO }}
+                          >
+                            {equipa.nome}
+                          </span>
+                          <span className="text-xs" style={{ color: COR_TEXTO_CABECALHO }}>
+                            {membros.length} {membros.length === 1 ? "membro" : "membros"} · editar ✎
+                          </span>
+                        </button>
+                      )}
 
                       {emEdicao && (
                         <div className="space-y-2 border-b border-line bg-surfacealt p-3">
@@ -396,7 +445,9 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
                         }
                       >
                         {membros.length === 0 ? (
-                          <p className="text-xs text-inksoft">Arrasta inscritos para aqui.</p>
+                          <p className="text-xs text-inksoft">
+                            {readOnly ? "Sem membros." : "Arrasta inscritos para aqui."}
+                          </p>
                         ) : (
                           membros.map(chip)
                         )}
@@ -405,7 +456,7 @@ export default function AdminEquipas({ equipas: equipasIniciais, inscritos, tran
                   );
                 })}
 
-                {novoAberto ? (
+                {readOnly ? null : novoAberto ? (
                   <div className="space-y-2 rounded-lg border border-dashed border-line p-3">
                     <input
                       type="text"

@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import type { InscritoRow, Equipa } from "@/lib/sheets";
+import { ehVagaSocial, estaValidado } from "@/lib/estados";
+import AdminVista, { useVista } from "@/components/AdminVista";
 import AdminEstadoEditor from "@/components/AdminEstadoEditor";
 import AdminEnviarDocs from "@/components/AdminEnviarDocs";
 import AdminResumoRestricoes from "@/components/AdminResumoRestricoes";
 import AdminEquipas from "@/components/AdminEquipas";
 
-type Filtro = "todos" | "pago" | "pendente";
+type Filtro = "todos" | "pago" | "pendente" | "social";
 type ItemRestricao = { nome: string; texto: string };
 
 type Props = {
@@ -16,6 +18,9 @@ type Props = {
   restricoesFisicas: ItemRestricao[];
   restricoesAlimentares: ItemRestricao[];
   alergias: ItemRestricao[];
+  /** Edição já encerrada: mostra os dados, mas não deixa alterar nada. */
+  arquivada?: boolean;
+  edicao?: number;
 };
 
 function formatarDataNascimento(valor: string): string {
@@ -72,49 +77,49 @@ export default function AdminTabelaInscritos({
   restricoesFisicas,
   restricoesAlimentares,
   alergias,
+  arquivada = false,
+  edicao,
 }: Props) {
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [vista, mudarVista] = useVista("inscritos", "lista");
 
-  const totalPago = inscritos.filter((i) => i.estado.toLowerCase() === "pago").length;
-  const totalPendente = inscritos.length - totalPago;
+  const totalValidados = inscritos.filter((i) => estaValidado(i.estado)).length;
+  const totalPendente = inscritos.length - totalValidados;
+  const totalSociais = inscritos.filter((i) => ehVagaSocial(i.estado)).length;
 
   const paraDestinatario = (i: InscritoRow) => {
     const emails = [i.email];
     if (i.menorDe18 === "Sim" && i.emailResponsavel) emails.push(i.emailResponsavel);
     return { nome: i.nome, emails };
   };
-  const destinatariosValidados = inscritos
-    .filter((i) => i.estado.toLowerCase() === "pago")
-    .map(paraDestinatario);
-  const destinatariosPendentes = inscritos
-    .filter((i) => i.estado.toLowerCase() !== "pago")
-    .map(paraDestinatario);
+  const destinatariosValidados = inscritos.filter((i) => estaValidado(i.estado)).map(paraDestinatario);
+  const destinatariosPendentes = inscritos.filter((i) => !estaValidado(i.estado)).map(paraDestinatario);
 
   const visiveis = inscritos.filter((i) => {
     if (filtro === "todos") return true;
-    if (filtro === "pago") return i.estado.toLowerCase() === "pago";
-    return i.estado.toLowerCase() !== "pago";
+    if (filtro === "pago") return estaValidado(i.estado);
+    if (filtro === "social") return ehVagaSocial(i.estado);
+    return !estaValidado(i.estado);
   });
 
   const opcoesFiltro: { valor: Filtro; label: string; total: number }[] = [
     { valor: "todos", label: "Todos", total: inscritos.length },
-    { valor: "pago", label: "Validados", total: totalPago },
+    { valor: "pago", label: "Validados", total: totalValidados },
     { valor: "pendente", label: "Pendentes", total: totalPendente },
+    { valor: "social", label: "Sociais", total: totalSociais },
   ];
 
   return (
     <div>
-      <h1 className="mb-4 text-xl font-semibold">Inscritos ({inscritos.length})</h1>
-
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="order-2 flex w-full items-center gap-0.5 rounded-xl border border-line bg-surfacealt p-1 sm:order-1 sm:w-auto">
+        <div className="order-2 flex w-full items-center gap-0.5 rounded-xl border border-line bg-surfacealt p-0.5 sm:order-1 sm:w-auto">
           {opcoesFiltro.map((opcao) => (
             <button
               key={opcao.valor}
               type="button"
               onClick={() => setFiltro(opcao.valor)}
               className={
-                "flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition sm:flex-none " +
+                "flex-1 rounded-lg px-3 py-1 text-sm font-medium transition sm:flex-none " +
                 (filtro === opcao.valor
                   ? "bg-white text-ink shadow-sm"
                   : "text-inkmuted hover:text-ink")
@@ -128,6 +133,10 @@ export default function AdminTabelaInscritos({
           ))}
         </div>
 
+        <div className="order-2 sm:order-1">
+          <AdminVista vista={vista} onMudar={mudarVista} />
+        </div>
+
         {/* Resumo + Equipas + Enviar Email Final como chips soltos, full width em mobile */}
         <div className="order-1 flex w-full items-center gap-2 sm:order-2 sm:ml-auto sm:w-auto">
           <div className="flex-1 sm:flex-none [&>button]:w-full">
@@ -139,14 +148,39 @@ export default function AdminTabelaInscritos({
             />
           </div>
           <div className="flex-1 sm:flex-none [&>button]:w-full">
-            <AdminEquipas equipas={equipas} inscritos={inscritos} transparente />
+            <AdminEquipas
+              equipas={equipas}
+              inscritos={inscritos}
+              edicao={edicao ?? 0}
+              transparente
+              readOnly={arquivada}
+            />
           </div>
-          <div className="flex-1 sm:flex-none [&>button]:w-full">
-            <AdminEnviarDocs validados={destinatariosValidados} pendentes={destinatariosPendentes} />
-          </div>
+          {!arquivada && (
+            <div className="flex-1 sm:flex-none [&>button]:w-full">
+              <AdminEnviarDocs
+                validados={destinatariosValidados}
+                pendentes={destinatariosPendentes}
+              />
+            </div>
+          )}
         </div>
       </div>
 
+      {inscritos.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-line px-6 py-12 text-center">
+          <p className="text-sm font-semibold text-ink">
+            {arquivada
+              ? `Sem inscrições no FIRE ${edicao}`
+              : `Ainda sem inscrições para o FIRE ${edicao}`}
+          </p>
+          <p className="mx-auto mt-1.5 max-w-sm text-sm text-inkmuted">
+            {arquivada
+              ? "Esta edição não tem inscrições guardadas."
+              : "As inscrições da próxima edição aparecem aqui assim que a primeira pessoa se inscrever."}
+          </p>
+        </div>
+      ) : vista === "lista" ? (
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
@@ -220,6 +254,8 @@ export default function AdminTabelaInscritos({
                       rowIndex={inscrito.rowIndex}
                       initialEstado={inscrito.estado}
                       initialOrigem={inscrito.origemPagamento}
+                      initialNota={inscrito.nota}
+                      readOnly={arquivada}
                     />
                   </td>
                 </tr>
@@ -228,6 +264,109 @@ export default function AdminTabelaInscritos({
           </tbody>
         </table>
       </div>
+      ) : (
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          {visiveis.map((inscrito) => {
+            const saudeItems = [
+              { label: "Alimentar", value: inscrito.restricoesAlimentares },
+              { label: "Atividade física", value: inscrito.restricoesAtividadeFisica },
+              { label: "Alergias", value: inscrito.alergias },
+              { label: "Outros", value: inscrito.outros },
+            ];
+
+            const responsavelItems = [
+              { label: "Nome", value: inscrito.nomeResponsavel },
+              { label: "Grau de parentesco", value: inscrito.grauParentesco },
+              { label: "Email", value: inscrito.emailResponsavel },
+              { label: "Contacto", value: inscrito.contactoResponsavel },
+            ];
+
+            return (
+              <div key={inscrito.rowIndex} className="rounded-xl border border-line p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-ink">{inscrito.nome}</p>
+                    <p className="text-[11px] text-inksoft">
+                      {new Date(inscrito.data).toLocaleDateString("pt-PT", {
+                        day: "2-digit",
+                        month: "2-digit",
+                      })}{" "}
+                      ·{" "}
+                      {new Date(inscrito.data).toLocaleTimeString("pt-PT", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex-none text-sm">
+                    <AdminEstadoEditor
+                      rowIndex={inscrito.rowIndex}
+                      initialEstado={inscrito.estado}
+                      initialOrigem={inscrito.origemPagamento}
+                      initialNota={inscrito.nota}
+                      readOnly={arquivada}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-2.5 space-y-1 text-xs text-inkmuted">
+                  <p className="truncate" title={inscrito.email}>
+                    {inscrito.email}
+                  </p>
+                  <p>
+                    {inscrito.contacto}
+                    {inscrito.contactoEmergencia && (
+                      <span className="text-inksoft"> · emergência {inscrito.contactoEmergencia}</span>
+                    )}
+                  </p>
+                </div>
+
+                <details className="group mt-2.5 border-t border-dashed border-line pt-2.5">
+                  <summary className="cursor-pointer list-none text-xs font-medium text-branddark marker:content-none">
+                    Ver detalhes
+                  </summary>
+                  <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-inksoft">
+                        Data Nasc.
+                      </dt>
+                      <dd className="text-ink">
+                        {formatarDataNascimento(inscrito.dataNascimento)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-inksoft">Menor 18</dt>
+                      <dd className="text-ink">
+                        {inscrito.menorDe18 === "Sim" ? (
+                          <span className="flex items-center gap-1.5">
+                            Sim · <DetailsCell items={responsavelItems} />
+                          </span>
+                        ) : (
+                          inscrito.menorDe18 || "—"
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-inksoft">Saúde</dt>
+                      <dd className="text-ink">
+                        <DetailsCell items={saudeItems} />
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-inksoft">
+                        Observações
+                      </dt>
+                      <dd className="text-ink">
+                        <TextoCell texto={inscrito.observacoes} />
+                      </dd>
+                    </div>
+                  </dl>
+                </details>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

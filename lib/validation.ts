@@ -79,3 +79,26 @@ export const inscricaoSchema = z
   });
 
 export type InscricaoInput = z.infer<typeof inscricaoSchema>;
+
+// Formulário de feedback, enviado aos participantes depois do FIRE.
+// Segue as mesmas perguntas do questionário em papel.
+const simNao = z.enum(["sim", "nao", ""]).optional().default("");
+const respostaLonga = z.string().trim().max(2000).optional().default("");
+
+export const feedbackSchema = z.object({
+  nome: z.string().trim().max(120).optional().default(""),
+  gostou: respostaLonga,
+  melhorar: respostaLonga,
+  mensagem: respostaLonga,
+  oQueFoi: respostaLonga,
+  volta: simNao,
+  ambiente: simNao,
+  atividades: simNao,
+  comida: simNao,
+  espaco: simNao,
+  avaliacao: z.coerce.number().int().min(1, "Escolhe uma avaliação.").max(5),
+  // honeypot: se vier preenchido, é bot
+  empresa: z.string().optional(),
+});
+
+export type FeedbackInput = z.infer<typeof feedbackSchema>;

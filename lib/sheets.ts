@@ -1,7 +1,8 @@
 import { google } from "googleapis";
 import type { InscricaoInput } from "./validation";
+import { EVENTO } from "./evento";
 
-const SHEET_RANGE = "Inscrições!A:T";
+const SHEET_RANGE = "Inscrições!A:X";
 
 /**
  * Cria o cliente autenticado do Google Sheets a partir da Service Account.
@@ -62,6 +63,10 @@ export async function appendInscricaoToSheet(data: InscricaoInput): Promise<numb
           data.consentimentoImagens ? "Sim" : "Não",
           data.consentimentoContacto ? "Sim" : "Não",
           "Pendente",
+          "", // U Nota
+          "", // V OrigemPagamento
+          "", // W EquipaId
+          EVENTO.edicao, // X Edição — gravada agora para o arquivo não mudar depois
         ],
       ],
     },
@@ -76,16 +81,25 @@ export async function appendInscricaoToSheet(data: InscricaoInput): Promise<numb
 }
 
 /**
- * Origem do pagamento, guardada na coluna U da aba "Inscrições":
- * "Automático" quando vem do webhook do Stripe, "Manual" quando um admin
- * marca o Estado como Pago à mão. Vazia quando o Estado é Pendente.
+ * Estado do pagamento (coluna T) e, opcionalmente:
+ * - nota (coluna U): texto livre da equipa sobre esta inscrição;
+ * - origem (coluna V): "Automático" quando vem do webhook do Stripe, "Manual"
+ *   quando um admin marca à mão, vazia quando fica Pendente.
  */
-export async function updateEstado(rowIndex: number, estado: string, origemPagamento?: string) {
+export async function updateEstado(
+  rowIndex: number,
+  estado: string,
+  origemPagamento?: string,
+  nota?: string
+) {
   const { sheets, sheetId } = getSheetsClient();
 
   const data = [{ range: `Inscrições!T${rowIndex}`, values: [[estado]] }];
+  if (nota !== undefined) {
+    data.push({ range: `Inscrições!U${rowIndex}`, values: [[nota]] });
+  }
   if (origemPagamento !== undefined) {
-    data.push({ range: `Inscrições!U${rowIndex}`, values: [[origemPagamento]] });
+    data.push({ range: `Inscrições!V${rowIndex}`, values: [[origemPagamento]] });
   }
 
   await sheets.spreadsheets.values.batchUpdate({
@@ -95,31 +109,41 @@ export async function updateEstado(rowIndex: number, estado: string, origemPagam
 }
 
 /**
- * Equipas: guardadas numa aba própria "Equipas" (colunas A=ID, B=Nome, C=Cor).
- * A equipa de cada inscrito é guardada na coluna V da aba "Inscrições".
+ * Equipas: guardadas numa aba própria "Equipas"
+ * (colunas A=ID, B=Nome, C=Cor, D=Edição).
+ * A equipa de cada inscrito é guardada na coluna W da aba "Inscrições".
+ *
+ * A edição fica na própria linha para que cada FIRE tenha as suas equipas —
+ * sem isso, renomear ou apagar uma equipa numa edição mexia no arquivo das
+ * anteriores.
  *
  * Configuração adicional necessária (ver README.md):
- * 4. Criar uma aba chamada "Equipas" na mesma Sheet, com cabeçalho ID / Nome / Cor.
+ * 4. Criar uma aba chamada "Equipas" com cabeçalho ID / Nome / Cor / Edição.
  */
-export type Equipa = { id: string; nome: string; cor: string };
+export type Equipa = { id: string; nome: string; cor: string; edicao: number };
 
-const EQUIPAS_RANGE = "Equipas!A:C";
+const EQUIPAS_RANGE = "Equipas!A:D";
 
 export async function getEquipas(): Promise<Equipa[]> {
   const { sheets, sheetId } = getSheetsClient();
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: "Equipas!A2:C",
+    range: "Equipas!A2:D",
   });
 
   const rows = res.data.values ?? [];
   return rows
     .filter((row) => row[0] && row[1])
-    .map((row) => ({ id: row[0], nome: row[1] ?? "", cor: row[2] ?? "" }));
+    .map((row) => ({
+      id: row[0],
+      nome: row[1] ?? "",
+      cor: row[2] ?? "",
+      edicao: Number(row[3]) || 0,
+    }));
 }
 
-export async function criarEquipa(nome: string, cor: string): Promise<Equipa> {
+export async function criarEquipa(nome: string, cor: string, edicao: number): Promise<Equipa> {
   const { sheets, sheetId } = getSheetsClient();
 
   // IDs simples e sequenciais (1, 2, 3…), a partir do maior ID já usado.
@@ -135,10 +159,10 @@ export async function criarEquipa(nome: string, cor: string): Promise<Equipa> {
     range: EQUIPAS_RANGE,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
-    requestBody: { values: [[id, nome, cor]] },
+    requestBody: { values: [[id, nome, cor, edicao]] },
   });
 
-  return { id, nome, cor };
+  return { id, nome, cor, edicao };
 }
 
 async function encontrarLinhaEquipa(id: string): Promise<number | null> {
@@ -183,7 +207,7 @@ export async function eliminarEquipa(id: string) {
       requestBody: {
         valueInputOption: "RAW",
         data: afetados.map((i) => ({
-          range: `Inscrições!V${i.rowIndex}`,
+          range: `Inscrições!W${i.rowIndex}`,
           values: [[""]],
         })),
       },
@@ -193,7 +217,7 @@ export async function eliminarEquipa(id: string) {
   // Limpa a linha em vez de a apagar, para não desalinhar as restantes linhas.
   await sheets.spreadsheets.values.clear({
     spreadsheetId: sheetId,
-    range: `Equipas!A${linha}:C${linha}`,
+    range: `Equipas!A${linha}:D${linha}`,
   });
 }
 
@@ -202,9 +226,214 @@ export async function atualizarEquipaInscrito(rowIndex: number, equipaId: string
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId,
-    range: `Inscrições!V${rowIndex}`,
+    range: `Inscrições!W${rowIndex}`,
     valueInputOption: "RAW",
     requestBody: { values: [[equipaId]] },
+  });
+}
+
+/**
+ * Despesas: aba própria "Despesas" com as colunas
+ * A=Data, B=Descrição, C=Categoria, D=Pago por, E=Valor, F=Comprovativo, G=Edição.
+ *
+ * A edição fica guardada na própria linha (e não deduzida da data) porque uma
+ * despesa paga depois do FIRE pertence à edição que acabou, não à seguinte.
+ *
+ * Configuração adicional necessária (ver README.md):
+ * 5. Criar uma aba chamada "Despesas" com esse cabeçalho.
+ */
+export type Despesa = {
+  rowIndex: number;
+  data: string;
+  descricao: string;
+  categoria: string;
+  pagoPor: string;
+  valorCentimos: number;
+  comprovativo: string;
+  edicao: number;
+};
+
+export type NovaDespesa = Omit<Despesa, "rowIndex">;
+
+const DESPESAS_RANGE = "Despesas!A:G";
+
+/** Lê "128,45", "128.45" ou "1.234,56" e devolve o valor em cêntimos. */
+function valorParaCentimos(valor: string): number {
+  const limpo = String(valor)
+    .replace(/[^\d.,-]/g, "")
+    .trim();
+  if (!limpo) return 0;
+
+  let normalizado = limpo;
+  if (limpo.includes(",") && limpo.includes(".")) {
+    // Formato português: o ponto separa milhares e a vírgula os decimais.
+    normalizado = limpo.replace(/\./g, "").replace(",", ".");
+  } else if (limpo.includes(",")) {
+    normalizado = limpo.replace(",", ".");
+  }
+
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? Math.round(numero * 100) : 0;
+}
+
+export async function getDespesas(): Promise<Despesa[]> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  let rows: string[][];
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "Despesas!A2:G",
+    });
+    rows = (res.data.values ?? []) as string[][];
+  } catch (err) {
+    // A aba ainda não existe — o /admin continua a funcionar sem despesas.
+    console.error("Não foi possível ler a aba Despesas:", err);
+    return [];
+  }
+
+  return rows
+    .map((row, i) => ({
+      rowIndex: i + 2,
+      data: row[0] ?? "",
+      descricao: row[1] ?? "",
+      categoria: row[2] ?? "",
+      pagoPor: row[3] ?? "",
+      valorCentimos: valorParaCentimos(row[4] ?? ""),
+      comprovativo: row[5] ?? "",
+      edicao: Number(row[6]) || 0,
+    }))
+    .filter((d) => d.descricao);
+}
+
+export async function criarDespesa(despesa: NovaDespesa): Promise<Despesa> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  const res = await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetId,
+    range: DESPESAS_RANGE,
+    valueInputOption: "RAW",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: {
+      values: [
+        [
+          despesa.data,
+          despesa.descricao,
+          despesa.categoria,
+          despesa.pagoPor,
+          despesa.valorCentimos / 100,
+          despesa.comprovativo,
+          despesa.edicao,
+        ],
+      ],
+    },
+  });
+
+  const updatedRange = res.data.updates?.updatedRange ?? "";
+  const match = updatedRange.match(/(\d+):/) ?? updatedRange.match(/(\d+)$/);
+  return { ...despesa, rowIndex: match ? Number(match[1]) : 0 };
+}
+
+export async function eliminarDespesa(rowIndex: number) {
+  const { sheets, sheetId } = getSheetsClient();
+
+  // Limpa a linha em vez de a apagar, para não desalinhar as restantes.
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId: sheetId,
+    range: `Despesas!A${rowIndex}:G${rowIndex}`,
+  });
+}
+
+/**
+ * Feedback: aba própria "Feedback", pela mesma ordem do questionário em papel:
+ * A=Data, B=Gostou, C=Melhorar, D=Mensagem, E=OQueFoi, F=Volta, G=Ambiente,
+ * H=Atividades, I=Comida, J=Espaço, K=Estrelas, L=Edição, M=Nome.
+ *
+ * Configuração adicional necessária (ver README.md):
+ * 6. Criar uma aba chamada "Feedback" com esse cabeçalho.
+ */
+export type Feedback = {
+  rowIndex: number;
+  data: string;
+  nome: string;
+  gostou: string;
+  melhorar: string;
+  mensagem: string;
+  oQueFoi: string;
+  volta: string;
+  ambiente: string;
+  atividades: string;
+  comida: string;
+  espaco: string;
+  avaliacao: number;
+  edicao: number;
+};
+
+const FEEDBACK_RANGE = "Feedback!A:M";
+
+export async function getFeedback(): Promise<Feedback[]> {
+  const { sheets, sheetId } = getSheetsClient();
+
+  let rows: string[][];
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: "Feedback!A2:M",
+    });
+    rows = (res.data.values ?? []) as string[][];
+  } catch (err) {
+    // A aba ainda não existe — o /admin continua a funcionar sem feedback.
+    console.error("Não foi possível ler a aba Feedback:", err);
+    return [];
+  }
+
+  return rows
+    .map((row, i) => ({
+      rowIndex: i + 2,
+      data: row[0] ?? "",
+      gostou: row[1] ?? "",
+      melhorar: row[2] ?? "",
+      mensagem: row[3] ?? "",
+      oQueFoi: row[4] ?? "",
+      volta: row[5] ?? "",
+      ambiente: row[6] ?? "",
+      atividades: row[7] ?? "",
+      comida: row[8] ?? "",
+      espaco: row[9] ?? "",
+      avaliacao: Number(row[10]) || 0,
+      edicao: Number(row[11]) || 0,
+      nome: row[12] ?? "",
+    }))
+    .filter((f) => f.avaliacao > 0 || f.gostou || f.melhorar || f.mensagem || f.oQueFoi);
+}
+
+export async function guardarFeedback(resposta: Omit<Feedback, "rowIndex" | "data">) {
+  const { sheets, sheetId } = getSheetsClient();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: sheetId,
+    range: FEEDBACK_RANGE,
+    valueInputOption: "RAW",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: {
+      values: [
+        [
+          new Date().toISOString(),
+          resposta.gostou,
+          resposta.melhorar,
+          resposta.mensagem,
+          resposta.oQueFoi,
+          resposta.volta,
+          resposta.ambiente,
+          resposta.atividades,
+          resposta.comida,
+          resposta.espaco,
+          resposta.avaliacao,
+          resposta.edicao,
+          resposta.nome,
+        ],
+      ],
+    },
   });
 }
 
@@ -232,6 +461,8 @@ export type InscritoRow = {
   estado: string;
   equipaId: string;
   origemPagamento: string;
+  nota: string;
+  edicao: number;
 };
 
 function linhaParaInscrito(row: string[], rowIndex: number): InscritoRow {
@@ -257,8 +488,10 @@ function linhaParaInscrito(row: string[], rowIndex: number): InscritoRow {
     consentimentoImagens: row[17] ?? "",
     consentimentoContacto: row[18] ?? "",
     estado: row[19] || "Pendente",
-    origemPagamento: row[20] ?? "",
-    equipaId: row[21] ?? "",
+    nota: row[20] ?? "",
+    origemPagamento: row[21] ?? "",
+    equipaId: row[22] ?? "",
+    edicao: Number(row[23]) || 0,
   };
 }
 
@@ -268,7 +501,7 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `${SHEET_RANGE.split("!")[0]}!A2:V`,
+    range: `${SHEET_RANGE.split("!")[0]}!A2:X`,
   });
 
   const rows = res.data.values ?? [];
@@ -281,7 +514,7 @@ export async function getInscricaoPorLinha(rowIndex: number): Promise<InscritoRo
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
-    range: `Inscrições!A${rowIndex}:V${rowIndex}`,
+    range: `Inscrições!A${rowIndex}:X${rowIndex}`,
   });
 
   const row = res.data.values?.[0];

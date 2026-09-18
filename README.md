@@ -72,12 +72,63 @@ A coluna **Estado** (`Pendente`/`Pago`) é escrita automaticamente como "Pendent
 
 Para o construtor de equipas (botão "Equipas" no `/admin`), a Google Sheet precisa de mais dois ajustes:
 
-1. Cria uma aba nova chamada **"Equipas"**, com cabeçalho `ID | Nome | Cor` (colunas A, B, C).
+1. Cria uma aba nova chamada **"Equipas"**, com cabeçalho `ID | Nome | Cor | Edicao` (colunas A a D).
 2. Na aba **"Inscrições"**, adiciona um cabeçalho na coluna **V** (ex: `EquipaId`) — é onde fica guardada a equipa de cada inscrito.
+
+Cada edição tem as suas equipas (é para isso que serve a coluna `Edicao`): sem ela, renomear ou
+apagar uma equipa numa edição mexia também no arquivo das anteriores — e apagar chegava a limpar as
+atribuições dos inscritos de anos passados.
+
+### Estados de pagamento e notas
+
+A coluna **Estado** aceita três valores:
+
+- `Pago` — pagou, conta para a receita nas Despesas;
+- `Vaga social` — não pagou, mas a inscrição fica validada à mesma (entra nas listas, emails e
+  equipas como qualquer validado, mas **não** conta para a receita);
+- `Pendente`.
+
+O email de confirmação de pagamento nunca é enviado a uma vaga social — confirmaria a receção de um
+pagamento que não houve. A modal do Estado nem sequer oferece essa opção nesse caso.
+
+Na aba **"Inscrições"**, a coluna **W** (ex: `Nota`) guarda uma nota livre da equipa sobre cada
+inscrito (ex: "pagou em mãos ao Tiago"), escrita na mesma modal do Estado e visível por baixo dele
+na tabela.
 
 ### Origem do pagamento
 
 Para saber se um pagamento foi validado automaticamente (Stripe/MB WAY) ou marcado manualmente no `/admin`, adiciona mais um cabeçalho na aba **"Inscrições"**, na coluna **U** (ex: `OrigemPagamento`). Fica com `Automático` ou `Manual`, consoante o caso — e aparece como "(auto)"/"(manual)" ao lado do Estado no `/admin`.
+
+### Separadores do /admin: Despesas e Feedback
+
+O `/admin` tem três separadores. Cada um precisa da sua aba na Google Sheet:
+
+1. **"Despesas"** — cabeçalho `Data | Descrição | Categoria | Pago por | Valor | Comprovativo | Edição`
+   (colunas A a G).
+2. **"Feedback"** — cabeçalho, pela mesma ordem do questionário em papel (colunas A a M):
+   `Data | Gostou | Melhorar | Mensagem | OQueFoi | Volta | Ambiente | Atividades | Comida | Espaco | Estrelas | Edicao | Nome`.
+   É preenchida sozinha pelo formulário público em `/fire/feedback`.
+
+Enquanto uma destas abas não existir, o separador aparece vazio e o erro fica só no log — o
+`/admin` continua a funcionar normalmente.
+
+### Arquivo por edição
+
+As inscrições de cada edição do FIRE fecham **5 dias depois do fim do evento**
+(`DIAS_ATE_ARQUIVAR` em `lib/evento.ts`). A partir daí ficam no separador da edição desse ano,
+só para consulta, e as inscrições novas passam a contar para a edição seguinte — para a próxima
+edição começar com a página limpa.
+
+A edição fica gravada na coluna **X** da aba "Inscrições" no momento da inscrição (se estiver vazia,
+é deduzida da data da coluna A, para linhas antigas). Guardá-la evita que o arquivo se reescreva
+sozinho: a dedução usa um único `EVENTO.fim` para todos os anos, por isso mudar as datas do FIRE
+num ano futuro reclassificaria inscrições passadas. As despesas, as equipas e o feedback guardam a
+edição pela mesma razão.
+
+**De ano para ano**, muda só o `lib/evento.ts` (`edicao`, `fim`, `datasLabel`, `local`, `valor`) —
+é o único sítio onde a data do FIRE está definida e daí acompanha o site, os emails e o arquivo.
+Enquanto o `edicao` não for atualizado, as despesas e o feedback dessa edição continuam a poder ser
+registados.
 
 ### Emails que falham a enviar (bounces)
 

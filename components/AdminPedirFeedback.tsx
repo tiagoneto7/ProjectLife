@@ -12,7 +12,7 @@ function chave(d: Destinatario) {
   return `${d.nome}|${d.emails.join(",")}`;
 }
 
-export default function AdminEnviarDocs({
+export default function AdminPedirFeedback({
   validados,
   pendentes,
 }: {
@@ -21,8 +21,8 @@ export default function AdminEnviarDocs({
 }) {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [aEnviar, setAEnviar] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const [resultado, setResultado] = useState<{ total: number } | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(
     () => new Set(validados.map(chave))
@@ -32,12 +32,7 @@ export default function AdminEnviarDocs({
   const emailsSelecionados = todos
     .filter((d) => selecionados.has(chave(d)))
     .flatMap((d) => d.emails);
-  // A API remove duplicados antes de enviar (ex: o mesmo email a ser
-  // responsável por mais do que um menor) — mostramos já esse número aqui
-  // para a contagem bater certo com o resultado final.
   const emailsUnicos = Array.from(new Set(emailsSelecionados));
-  const validadosSelecionados = validados.filter((d) => selecionados.has(chave(d))).length;
-  const pendentesSelecionados = pendentes.filter((d) => selecionados.has(chave(d))).length;
 
   function abrir() {
     setSelecionados(new Set(validados.map(chave)));
@@ -47,7 +42,7 @@ export default function AdminEnviarDocs({
   function fechar() {
     setOpen(false);
     setPassword("");
-    setError(null);
+    setErro(null);
     setResultado(null);
   }
 
@@ -63,21 +58,21 @@ export default function AdminEnviarDocs({
     });
   }
 
-  async function handleEnviar() {
-    setSending(true);
-    setError(null);
+  async function enviar() {
+    setAEnviar(true);
+    setErro(null);
 
-    const res = await fetch("/api/admin/enviar-docs", {
+    const res = await fetch("/api/admin/pedir-feedback", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password, emails: emailsSelecionados }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
 
-    setSending(false);
+    setAEnviar(false);
 
     if (!res.ok) {
-      setError(data.error ?? "Não foi possível enviar.");
+      setErro(data.error ?? "Não foi possível enviar.");
       return;
     }
 
@@ -91,7 +86,7 @@ export default function AdminEnviarDocs({
         onClick={abrir}
         className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-brandink hover:bg-branddark"
       >
-        Enviar informações finais
+        Enviar link por email
       </button>
 
       {open && (
@@ -105,15 +100,14 @@ export default function AdminEnviarDocs({
             className="flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-line bg-surface p-5 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="flex-none text-sm font-semibold text-ink">Enviar informações finais</p>
+            <p className="flex-none text-sm font-semibold text-ink">Pedir feedback</p>
             <p className="mt-1 flex-none text-sm text-inkmuted">
-              Vai ser enviado o email com as informações finais do FIRE às pessoas selecionadas
-              abaixo. 
+              Vai ser enviado um email com o link do formulário às pessoas selecionadas.
             </p>
 
             <div className="mt-3 flex-1 overflow-y-auto rounded-lg border border-line">
               {todos.length === 0 ? (
-                <p className="p-3 text-sm text-inksoft">Ainda não há nenhum inscrito.</p>
+                <p className="p-3 text-sm text-inksoft">Não há inscritos nesta edição.</p>
               ) : (
                 <>
                   {validados.length > 0 && (
@@ -171,21 +165,20 @@ export default function AdminEnviarDocs({
               )}
             </div>
 
-            <p className="mt-6 flex-none text-xs text-inksoft">
-              {selecionados.size} selecionados ({validadosSelecionados} validados,{" "}
-              {pendentesSelecionados} pendentes) · {emailsUnicos.length} emails
+            <p className="mt-4 flex-none text-xs text-inksoft">
+              {selecionados.size} selecionados · {emailsUnicos.length} emails
             </p>
 
             {resultado ? (
               <>
                 <p className="mt-3 flex-none text-sm text-branddark">
-                  Email enviado para {resultado.total} destinatários.
+                  Enviado para {resultado.total} destinatários.
                 </p>
                 <div className="mt-4 flex flex-none justify-end">
                   <button
                     type="button"
                     onClick={fechar}
-                    className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-branddark"
+                    className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brandink hover:bg-branddark"
                   >
                     Fechar
                   </button>
@@ -199,21 +192,21 @@ export default function AdminEnviarDocs({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password de administração"
-                  className="mt-3 flex-none w-full rounded border border-line px-3 py-2 text-sm"
-                  onKeyDown={(e) => e.key === "Enter" && handleEnviar()}
+                  className="mt-3 w-full flex-none rounded border border-line px-3 py-2 text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && enviar()}
                 />
-                {error && <p className="mt-2 flex-none text-sm text-red-600">{error}</p>}
+                {erro && <p className="mt-2 flex-none text-sm text-red-600">{erro}</p>}
                 <div className="mt-4 flex flex-none justify-end gap-2">
                   <button type="button" onClick={fechar} className="text-sm text-inkmuted hover:text-ink">
                     Cancelar
                   </button>
                   <button
                     type="button"
-                    disabled={sending || !password || emailsSelecionados.length === 0}
-                    onClick={handleEnviar}
-                    className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-branddark disabled:opacity-50"
+                    disabled={aEnviar || !password || emailsUnicos.length === 0}
+                    onClick={enviar}
+                    className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brandink disabled:opacity-50"
                   >
-                    {sending ? "A enviar…" : "Confirmar e enviar"}
+                    {aEnviar ? "A enviar…" : "Confirmar e enviar"}
                   </button>
                 </div>
               </>

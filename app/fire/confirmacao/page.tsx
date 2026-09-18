@@ -2,6 +2,8 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import InscricaoConfirmada from "@/components/InscricaoConfirmada";
 import { getInscricaoPorLinha } from "@/lib/sheets";
+import { EVENTO } from "@/lib/evento";
+import { estaValidado } from "@/lib/estados";
 
 export const metadata = {
   title: "Inscrição confirmada | Fire",
@@ -29,7 +31,7 @@ export default async function ConfirmacaoPage({
   let inicialmentePago = false;
   try {
     const inscrito = await getInscricaoPorLinha(rowIndex);
-    inicialmentePago = inscrito?.estado.toLowerCase() === "pago";
+    inicialmentePago = inscrito ? estaValidado(inscrito.estado) : false;
   } catch (err) {
     console.error("Erro ao verificar estado do pagamento na Sheet:", err);
   }
@@ -49,15 +51,15 @@ export default async function ConfirmacaoPage({
           <dl className="space-y-1.5 text-center text-inkmuted sm:text-left">
             <div>
               <dt className="sr-only">Data</dt>
-              <dd>11, 12 e 13 de Setembro, 2026</dd>
+              <dd>{EVENTO.datasLabel}</dd>
             </div>
             <div>
               <dt className="sr-only">Morada</dt>
-              <dd>Rua Constantina Fernandes Nº 15, Poceirão</dd>
+              <dd>{EVENTO.local}</dd>
             </div>
             <div>
               <dt className="sr-only">Valor</dt>
-              <dd className="font-semibold text-branddark">35€</dd>
+              <dd className="font-semibold text-branddark">{EVENTO.valor}</dd>
             </div>
           </dl>
         </header>
