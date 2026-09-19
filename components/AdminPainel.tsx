@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { InscritoRow, Equipa, Movimento, Feedback } from "@/lib/sheets";
-import { edicaoAtual, edicaoDaData, fichaDaEdicao } from "@/lib/evento";
+import { edicaoAtual, edicaoDaData, fichaDaEdicao, fireTerminou } from "@/lib/evento";
 import { ehVagaSocial, pagou } from "@/lib/estados";
 import { ehCategoriaInscricoes } from "@/lib/contas";
 import { agruparDestinatarios } from "@/components/AdminListaDestinatarios";
@@ -65,6 +65,9 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
   // Inscrições: a edição muda a 1 de janeiro, por isso uma edição passada é
   // só de leitura.
   const arquivada = edicao !== atual;
+  // Depois do FIRE deixa de fazer sentido criar equipas ou enviar as
+  // informações finais — esses botões somem logo a seguir ao último dia.
+  const terminou = arquivada || fireTerminou(edicao);
   // Equipas e contas ficam editáveis em qualquer edição (faturas e lugares
   // finais chegam depois do fecho). O pedido de feedback só na edição atual —
   // é essa a que o formulário grava.
@@ -187,6 +190,7 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           restricoesAlimentares={restricoesAlimentares}
           alergias={alergias}
           arquivada={arquivada}
+          terminou={terminou}
           edicao={edicao}
         />
       )}
@@ -196,7 +200,7 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           equipas={equipasDaEdicao}
           inscritos={visiveis}
           edicao={edicao}
-          arquivada={arquivada}
+          arquivada={terminou}
         />
       )}
 

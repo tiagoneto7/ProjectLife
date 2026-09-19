@@ -136,8 +136,12 @@ Depois do FIRE, esconde-se o botão de inscrição até ao ano seguinte.
 Site, formulário, emails, Sheet e `/admin` usam todos a mesma regra, e as páginas são geradas a
 cada visita, por isso a troca não precisa de novo deploy.
 
-Dias (11, 12 e 13 de Setembro), local e valor (35€) são fixos em `FIRE` (`lib/evento.ts`) — só o
-ano muda, sozinho. Se um dia mudarem, é esse o único sítio a alterar.
+**As datas do FIRE mandam em tudo.** Em `FIRE` (`lib/evento.ts`) estão só o `inicio` e o `fim` (dia,
+mês e hora de check-in/check-out), o local e o valor (35€). Daí sai tudo o resto, para qualquer ano:
+o texto "11, 12 e 13 de Setembro, 2026" do site e dos emails, o check-in e o check-out do email
+"Enviar informações finais", e quando o FIRE conta como terminado — `DIAS_APOS_FIM` (3) dias depois
+do `fim`, os botões "+ Nova equipa" e "Enviar informações finais" do `/admin` desaparecem até ao ano
+seguinte. Para mudar as datas, muda só `inicio` e `fim`.
 
 - A edição de cada inscrição fica gravada na coluna **X** da aba "Inscrições" no momento da
   inscrição; o `/admin`, a página de confirmação, o pagamento e o email de pagamento confirmado usam
