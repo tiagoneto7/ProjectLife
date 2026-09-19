@@ -559,7 +559,11 @@ export async function getInscricoes(): Promise<InscritoRow[]> {
   });
 
   const rows = res.data.values ?? [];
-  return rows.map((row, i) => linhaParaInscrito(row, i + 2));
+  // O número da linha é calculado antes de filtrar, para continuar certo.
+  // Linhas vazias (ex: espaço aberto à mão na Sheet) não são inscrições.
+  return rows
+    .map((row, i) => linhaParaInscrito(row, i + 2))
+    .filter((inscrito) => inscrito.nome.trim());
 }
 
 /** Lê uma única inscrição pelo número da linha na Sheet. */
