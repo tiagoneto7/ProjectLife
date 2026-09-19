@@ -321,20 +321,6 @@ export default function AdminEquipas({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-x-5 rounded-xl border border-line bg-surfacealt px-4 py-2 text-sm text-inkmuted">
-          <span>
-            <b className="font-semibold text-ink">{equipas.length}</b>{" "}
-            {equipas.length === 1 ? "equipa" : "equipas"}
-          </span>
-          <span className="h-4 w-px bg-line" aria-hidden="true" />
-          <span>
-            <b className="font-semibold text-ink">{atribuidos}</b> de {inscritos.length} atribuídos
-          </span>
-          <span className="hidden h-1.5 w-24 overflow-hidden rounded bg-line sm:block" aria-hidden="true">
-            <span className="block h-full rounded bg-brand" style={{ width: `${percentagem}%` }} />
-          </span>
-        </div>
-
         {classificacao.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-line bg-surfacealt px-4 py-2 text-sm">
             <span className="text-[11px] uppercase tracking-wide text-inksoft">Classificação</span>
@@ -372,9 +358,16 @@ export default function AdminEquipas({
             (sobreZona === "nao-atribuidos" ? "border-branddark bg-surfacealt" : "border-line")
           }
         >
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-inksoft">
-            Por atribuir ({naoAtribuidos.length})
+          {/* Sem título: os grupos (Pagos/Sociais/Pendentes) já dizem o que é. */}
+          <p className="text-[11px] text-inkmuted">
+            <b className="font-semibold text-ink">{atribuidos}</b> de {inscritos.length} atribuídos
           </p>
+          <span
+            className="mb-3 mt-1.5 block h-1.5 overflow-hidden rounded bg-line"
+            aria-hidden="true"
+          >
+            <span className="block h-full rounded bg-brand" style={{ width: `${percentagem}%` }} />
+          </span>
           {porAtribuir.map((grupo) => (
             <div key={grupo.titulo} className="mb-3 last:mb-0">
               <p className="mb-1.5 text-[11px] text-inksoft">{grupo.titulo}</p>
