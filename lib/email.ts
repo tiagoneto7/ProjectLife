@@ -417,9 +417,9 @@ export async function sendDocumentosFinais(emails: string[]) {
         <p style="color:#5a5a5a;">Prepara-te para uma experiência inesquecível, repleta de aventura, diversão, novas amizades e momentos que vão ficar na memória!</p>
         <p style="color:#5a5a5a;">Este ano, temos muitas novidades preparadas para ti e queremos garantir que chegas ao FIRE com tudo o que precisas de saber. Por isso, reunimos aqui as informações essenciais.</p>
 
-        <p style="color:#5a5a5a; margin: 20px 0 4px;">📅 Check-in — ${EVENTO.checkIn}</p>
-        <p style="color:#5a5a5a; margin: 0 0 4px;">📍 FIRE campus — Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão</p>
-        <p style="color:#5a5a5a; margin: 0 0 20px;">📅 Check-out — ${EVENTO.checkOut}</p>
+        <p style="color:#5a5a5a; margin: 20px 0 4px;">📅 Check-in: ${EVENTO.checkIn}</p>
+        <p style="color:#5a5a5a; margin: 0 0 4px;">📍 FIRE campus: Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão</p>
+        <p style="color:#5a5a5a; margin: 0 0 20px;">📅 Check-out: ${EVENTO.checkOut}</p>
 
         <p style="color:#5a5a5a;">O teu monitor irá entrar em contacto contigo, pelo WhatsApp, durante os próximos dias, para combinar todos os pormenores e responder a qualquer questão que possas ter.<br />Fica atento às mensagens!</p>
         <p style="color:#5a5a5a;">Se tiveres alguma dúvida ou pergunta, não hesites em contactar-nos.</p>
@@ -443,9 +443,9 @@ export async function sendDocumentosFinais(emails: string[]) {
       "Prepara-te para uma experiência inesquecível, repleta de aventura, diversão, novas amizades e momentos que vão ficar na memória!",
       "Este ano, temos muitas novidades preparadas para ti e queremos garantir que chegas ao FIRE com tudo o que precisas de saber. Por isso, reunimos aqui as informações essenciais.",
       "",
-      `Check-in — ${EVENTO.checkIn}`,
-      "FIRE campus — Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão",
-      `Check-out — ${EVENTO.checkOut}`,
+      `Check-in: ${EVENTO.checkIn}`,
+      "FIRE campus: Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão",
+      `Check-out: ${EVENTO.checkOut}`,
       "",
       "O teu monitor irá entrar em contacto contigo, pelo WhatsApp, durante os próximos dias, para combinar todos os pormenores e responder a qualquer questão que possas ter. Fica atento às mensagens!",
       "Se tiveres alguma dúvida ou pergunta, não hesites em contactar-nos.",

@@ -20,9 +20,9 @@ export default function QuemSomosPage() {
             a adolescentes e jovens a partir dos 12 anos.
           </p>
           <p>
-            Este evento reúne atividades desportivas, palestras sobre temas atuais — como hábitos de
-            vida saudáveis, cidadania, resiliência e inteligência emocional — e momentos de
-            convívio, incluindo noites temáticas, cinema ao ar livre e outras dinâmicas.
+            Este evento reúne atividades desportivas, palestras sobre temas atuais (hábitos de vida
+            saudáveis, cidadania, resiliência e inteligência emocional) e momentos de convívio,
+            incluindo noites temáticas, cinema ao ar livre e outras dinâmicas.
           </p>
           <p>
             O FIRE tem uma identidade cristã, e os seus valores são partilhados e vividos ao longo
