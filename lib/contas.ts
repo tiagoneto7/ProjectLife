@@ -24,8 +24,8 @@ export function ehCategoriaInscricoes(categoria: string): boolean {
  * e só aparecem na edição em que foram usadas.
  */
 export const CATEGORIAS_FIXAS: Record<TipoMovimento, string[]> = {
-  entrada: ["Donativos", "Capital da Associação"],
-  saida: ["Alimentação", "Seguros", "Atividades"],
+  entrada: ["Donativos"],
+  saida: ["Alimentação", "Seguros", "Atividades", "Outros"],
 };
 
 /** Lê o valor da coluna Tipo; linhas antigas sem tipo eram todas despesas. */

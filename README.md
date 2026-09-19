@@ -117,8 +117,8 @@ sua aba na Google Sheet:
    `Pago` × valor do FIRE; as vagas sociais não contam).
 
    Categorias fixas, iguais em todas as edições (`CATEGORIAS_FIXAS` em `lib/contas.ts`):
-   - Entradas: Inscrições (automática), Donativos, Capital da Associação;
-   - Saídas: Alimentação, Seguros, Atividades.
+   - Entradas: Inscrições (automática), Donativos;
+   - Saídas: Alimentação, Seguros, Atividades, Outros.
 
    Qualquer outra categoria (ex: "Chuveiros") cria-se na hora no `/admin` e só aparece na
    edição em que foi usada.
