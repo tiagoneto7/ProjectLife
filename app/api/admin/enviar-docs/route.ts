@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { ADMIN_SESSION_COOKIE, checkAdminPassword, isValidAdminSession } from "@/lib/auth";
+import { ADMIN_SESSION_COOKIE, checkAdminPassword, erroSemPermissaoParaEditar } from "@/lib/auth";
 import { sendDocumentosFinais } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
-  if (!isValidAdminSession(token)) {
-    return NextResponse.json({ error: "Sessão inválida. Volta a entrar." }, { status: 401 });
+  const semPermissao = erroSemPermissaoParaEditar(token);
+  if (semPermissao) {
+    return NextResponse.json({ error: semPermissao.error }, { status: semPermissao.status });
   }
 
   const { password, emails } = await req.json().catch(() => ({}));

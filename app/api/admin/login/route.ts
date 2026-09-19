@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADMIN_SESSION_COOKIE, checkAdminPassword } from "@/lib/auth";
+import { ADMIN_SESSION_COOKIE, entrarNoAdmin } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json().catch(() => ({ password: "" }));
 
-  const token = checkAdminPassword(typeof password === "string" ? password : "");
-  if (!token) {
+  const sessao = entrarNoAdmin(typeof password === "string" ? password : "");
+  if (!sessao) {
     return NextResponse.json({ error: "Password incorreta." }, { status: 401 });
   }
 
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(ADMIN_SESSION_COOKIE, token, {
+  const res = NextResponse.json({ ok: true, papel: sessao.papel });
+  res.cookies.set(ADMIN_SESSION_COOKIE, sessao.token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

@@ -66,7 +66,15 @@ Página protegida por password simples em `/admin` que lista todas as inscriçõ
 
 A coluna **Estado** (`Pendente`/`Pago`) é escrita automaticamente como "Pendente" em cada nova inscrição, e é manual: para marcar como paga, edita diretamente essa célula na Google Sheet (até termos os pagamentos MB WAY automatizados).
 
-⚠️ É uma proteção simples (uma única password partilhada), suficiente para uso interno da equipa — não é um sistema de utilizadores.
+Há dois níveis de acesso, cada um com a sua password:
+
+- `ADMIN_PASSWORD` — **editor**: vê e altera tudo;
+- `READONLY_PASSWORD` — **só leitura**: vê tudo (inscrições, saúde, equipas, contas, feedback), mas
+  não aparecem os controlos de edição nem de envio, e o servidor recusa qualquer alteração
+  (`erroSemPermissaoParaEditar` em `lib/auth.ts`, usado por todas as rotas `/api/admin/*`).
+
+⚠️ É uma proteção simples (passwords partilhadas), suficiente para uso interno da equipa — não é um
+sistema de utilizadores, e não regista quem fez cada alteração.
 
 ### Equipas
 

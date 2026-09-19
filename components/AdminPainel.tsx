@@ -10,6 +10,7 @@ import { agruparDestinatarios } from "@/components/AdminListaDestinatarios";
 import AdminTabelaInscritos from "@/components/AdminTabelaInscritos";
 import AdminEquipas from "@/components/AdminEquipas";
 import AdminContas from "@/components/AdminContas";
+import AdminModoEdicao from "@/components/AdminModoEdicao";
 import AdminFeedback from "@/components/AdminFeedback";
 
 type Separador = "inscricoes" | "equipas" | "contas" | "feedback";
@@ -19,13 +20,21 @@ type Props = {
   equipas: Equipa[];
   movimentos: Movimento[];
   feedback: Feedback[];
+  /** false para quem entrou com a password de leitura: vê tudo, não altera nada. */
+  podeEditar: boolean;
 };
 
 const SEM_RESTRICAO = ["nada", "nenhum", "nenhuma"];
 const temRestricao = (texto: string) =>
   Boolean(texto) && !SEM_RESTRICAO.includes(texto.trim().toLowerCase());
 
-export default function AdminPainel({ inscritos, equipas, movimentos, feedback }: Props) {
+export default function AdminPainel({
+  inscritos,
+  equipas,
+  movimentos,
+  feedback,
+  podeEditar,
+}: Props) {
   const atual = edicaoAtual();
 
   // A edição de cada inscrito é a gravada na coluna X no momento da inscrição
@@ -156,7 +165,14 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
 
   return (
     <div>
-      {slotEdicao && createPortal(<span className="hidden sm:inline-flex">{seletorEdicao}</span>, slotEdicao)}
+      {slotEdicao &&
+        createPortal(
+          <span className="hidden items-center gap-4 sm:inline-flex">
+            {seletorEdicao}
+            <AdminModoEdicao ligado={podeEditar} />
+          </span>,
+          slotEdicao
+        )}
       <div className="mb-8 flex items-end justify-between gap-3 border-b border-line">
         <div className="flex gap-5 overflow-x-auto sm:gap-6">
           {separadores.map((s) => {
@@ -180,7 +196,10 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
         </div>
 
         {/* Em mobile o "Sair" está dentro do menu, por isso o ano fica aqui. */}
-        <div className="mb-2 flex-none sm:hidden">{seletorEdicao}</div>
+        <div className="mb-2 flex flex-none items-center gap-4 sm:hidden">
+          {seletorEdicao}
+          <AdminModoEdicao ligado={podeEditar} />
+        </div>
       </div>
 
       {separador === "inscricoes" && (
@@ -191,6 +210,7 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           alergias={alergias}
           arquivada={arquivada}
           terminou={terminou}
+          readOnly={arquivada || !podeEditar}
           edicao={edicao}
         />
       )}
@@ -201,6 +221,7 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           inscritos={visiveis}
           edicao={edicao}
           arquivada={terminou}
+          readOnly={!podeEditar}
         />
       )}
 
@@ -210,6 +231,7 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           anterior={temAnterior ? contasAnterior : undefined}
           edicao={edicao}
           arquivada={arquivada}
+          readOnly={!podeEditar}
         />
       )}
       {separador === "feedback" && (
@@ -218,7 +240,7 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           destinatarios={destinatarios}
           totalConvidados={visiveis.length}
           edicao={edicao}
-          readOnly={!pedeFeedback}
+          readOnly={!pedeFeedback || !podeEditar}
         />
       )}
     </div>

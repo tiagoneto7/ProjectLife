@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { ADMIN_SESSION_COOKIE, isValidAdminSession } from "@/lib/auth";
+import { ADMIN_SESSION_COOKIE, erroSemPermissaoParaEditar } from "@/lib/auth";
 import { atualizarMovimento, criarMovimento } from "@/lib/sheets";
 import {
   CATEGORIA_INSCRICOES,
@@ -16,8 +16,9 @@ const texto = (valor: unknown, max: number) =>
 /** Cria um movimento novo, ou atualiza um existente quando vem `rowIndex`. */
 export async function POST(req: NextRequest) {
   const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
-  if (!isValidAdminSession(token)) {
-    return NextResponse.json({ error: "Sessão inválida. Volta a entrar." }, { status: 401 });
+  const semPermissao = erroSemPermissaoParaEditar(token);
+  if (semPermissao) {
+    return NextResponse.json({ error: semPermissao.error }, { status: semPermissao.status });
   }
 
   const corpo = await req.json().catch(() => ({}));

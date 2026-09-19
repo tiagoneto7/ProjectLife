@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { ADMIN_SESSION_COOKIE, isValidAdminSession } from "@/lib/auth";
+import { ADMIN_SESSION_COOKIE, papelDaSessao } from "@/lib/auth";
 import { getInscricoes, getEquipas, getMovimentos, getFeedback } from "@/lib/sheets";
 import AdminLoginForm from "@/components/AdminLoginForm";
 import AdminPainel from "@/components/AdminPainel";
@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
 
-  if (!isValidAdminSession(token)) {
+  const papel = papelDaSessao(token);
+  if (!papel) {
     return <AdminLoginForm />;
   }
 
@@ -27,6 +28,7 @@ export default async function AdminPage() {
         equipas={equipas}
         movimentos={movimentos}
         feedback={feedback}
+        podeEditar={papel === "editor"}
       />
     </div>
   );

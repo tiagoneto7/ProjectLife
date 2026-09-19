@@ -18,8 +18,10 @@ export default function SiteHeaderClient({ isAdmin }: { isAdmin: boolean }) {
   useCloseOnEscape(open, () => setOpen(false));
 
   return (
-    <header className="relative border-b border-line bg-surface">
-      <div className="relative z-50 mx-auto flex max-w-4xl items-center justify-between bg-surface px-6 py-3">
+    <header className="relative border-b border-line bg-[#FCFCFB]">
+      {/* Fundo quase branco (entre o branco da página e o #F7F7F5 dos cartões). */}
+      {/* Mais largo (e sem quebras) porque no /admin o header leva também o ano e o modo de edição. */}
+      <div className="relative z-50 mx-auto flex max-w-6xl items-center justify-between gap-6 bg-[#FCFCFB] px-6 py-3">
         <Link
           href="/"
           className="flex items-center gap-3"
@@ -35,14 +37,14 @@ export default function SiteHeaderClient({ isAdmin }: { isAdmin: boolean }) {
               className="h-[68%] w-[68%] object-contain invert"
             />
           </span>
-          <span className="hidden text-[13px] uppercase tracking-[0.1em] text-inksoft sm:inline">
+          <span className="hidden whitespace-nowrap text-[13px] uppercase tracking-[0.1em] text-inksoft sm:inline">
             Associação Project Life
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-inkmuted sm:flex">
+        <nav className="hidden flex-none items-center gap-6 text-sm text-inkmuted sm:flex">
           {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-ink">
+            <Link key={link.href} href={link.href} className="whitespace-nowrap hover:text-ink">
               {link.label}
             </Link>
           ))}

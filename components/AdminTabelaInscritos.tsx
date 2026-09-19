@@ -21,6 +21,8 @@ type Props = {
   arquivada?: boolean;
   /** O FIRE desta edição já terminou: esconde o envio das informações finais. */
   terminou?: boolean;
+  /** Sem edição do estado/notas: edição arquivada ou acesso só de leitura. */
+  readOnly?: boolean;
   edicao?: number;
 };
 
@@ -79,6 +81,7 @@ export default function AdminTabelaInscritos({
   alergias,
   arquivada = false,
   terminou = false,
+  readOnly = arquivada,
   edicao,
 }: Props) {
   const [filtro, setFiltro] = useState<Filtro>("todos");
@@ -143,7 +146,7 @@ export default function AdminTabelaInscritos({
               transparente
             />
           </div>
-          {!terminou && (
+          {!terminou && !readOnly && (
             <div className="flex-1 sm:flex-none [&>button]:w-full">
               <AdminEnviarDocs
                 grupos={destinatarios}
@@ -241,7 +244,7 @@ export default function AdminTabelaInscritos({
                       initialEstado={inscrito.estado}
                       initialOrigem={inscrito.origemPagamento}
                       initialNota={inscrito.nota}
-                      readOnly={arquivada}
+                      readOnly={readOnly}
                     />
                   </td>
                 </tr>
@@ -290,7 +293,7 @@ export default function AdminTabelaInscritos({
                       initialEstado={inscrito.estado}
                       initialOrigem={inscrito.origemPagamento}
                       initialNota={inscrito.nota}
-                      readOnly={arquivada}
+                      readOnly={readOnly}
                     />
                   </div>
                 </div>
