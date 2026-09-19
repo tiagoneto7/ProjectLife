@@ -14,6 +14,19 @@ const CONTACTOS = {
   website: "https://projectlife.pt",
 };
 
+/** Rodapé dos emails em texto simples (os filtros desconfiam de emails só em HTML). */
+function rodapeTexto() {
+  return [
+    "",
+    `Whatsapp: ${CONTACTOS.whatsapp}`,
+    `Email: ${CONTACTOS.email}`,
+    `Redes sociais: ${CONTACTOS.redesSociais}`,
+    "Website: projectlife.pt",
+    "",
+    "Associação Project Life",
+  ].join("\n");
+}
+
 /**
  * Envia o email de confirmação de inscrição via Resend.
  * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
@@ -51,11 +64,32 @@ export async function sendConfirmationEmail(data: InscricaoInput, rowIndex: numb
   }
   const retomarUrl = `${siteUrl}/fire/confirmacao?${retomarParams.toString()}`;
 
+  const text =
+    [
+      `Olá, ${data.nome},`,
+      "",
+      "Estamos felizes por te termos a bordo! Agora que recebemos a tua inscrição, segue os próximos passos para a validarmos.",
+      "Já efetuaste o pagamento? Ignora este email automático e aguarda pelo nosso contacto.",
+      "",
+      `Pagamento com Cartão ou MB WAY (imediato): ${retomarUrl}`,
+      "",
+      `Ou pagamento manual de ${EVENTO.valor}:`,
+      `- MBWAY (${PAGAMENTO.mbway})`,
+      `- Transferência bancária (${PAGAMENTO.iban})`,
+      "- Pagamento em mãos",
+      "Depois envia-nos o comprovativo pelo Whatsapp ou email e aguarda que validemos.",
+      "",
+      `Datas: ${EVENTO.datasLabel}`,
+      `Local: ${EVENTO.local}`,
+    ].join("\n") + rodapeTexto();
+
   await resend.emails.send({
     from,
     to: data.email,
     ...(cc ? { cc } : {}),
+    reply_to: CONTACTOS.email,
     subject: "Inscrição Fire",
+    text,
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
 
@@ -233,9 +267,22 @@ export async function sendPaymentConfirmationEmail(data: PagamentoConfirmadoData
   const resend = new Resend(apiKey);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+  const text =
+    [
+      `Olá, ${data.nome},`,
+      "",
+      `Confirmamos que recebemos o teu pagamento de ${EVENTO.valor}.`,
+      "A tua inscrição no Fire está validada — Até já!",
+      "",
+      `Datas: ${EVENTO.datasLabel}`,
+      `Local: ${EVENTO.local}`,
+    ].join("\n") + rodapeTexto();
+
   await resend.emails.send({
     from,
     to: data.email,
+    reply_to: CONTACTOS.email,
+    text,
     subject: "Inscrição Fire validada",
     html: `
       <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; color: #1F2430;">
@@ -390,12 +437,31 @@ export async function sendDocumentosFinais(emails: string[]) {
       </div>
     `;
 
+  const text =
+    [
+      `É com grande entusiasmo que te damos as boas-vindas ao FIRE ${ano}!`,
+      "Prepara-te para uma experiência inesquecível, repleta de aventura, diversão, novas amizades e momentos que vão ficar na memória!",
+      "Este ano, temos muitas novidades preparadas para ti e queremos garantir que chegas ao FIRE com tudo o que precisas de saber. Por isso, reunimos aqui as informações essenciais.",
+      "",
+      `Check-in — ${EVENTO.checkIn}`,
+      "FIRE campus — Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão",
+      `Check-out — ${EVENTO.checkOut}`,
+      "",
+      "O teu monitor irá entrar em contacto contigo, pelo WhatsApp, durante os próximos dias, para combinar todos os pormenores e responder a qualquer questão que possas ter. Fica atento às mensagens!",
+      "Se tiveres alguma dúvida ou pergunta, não hesites em contactar-nos.",
+      "",
+      `Até breve,`,
+      `Equipa FIRE ${ano}`,
+    ].join("\n") + rodapeTexto();
+
   const subject = `FIRE ${ano} — Informações`;
 
   // Resend só aceita até 100 emails por chamada ao batch send.
   for (let i = 0; i < emails.length; i += 100) {
     const lote = emails.slice(i, i + 100);
-    await resend.batch.send(lote.map((to) => ({ from, to, subject, html })));
+    await resend.batch.send(
+      lote.map((to) => ({ from, to, subject, html, text, replyTo: CONTACTOS.email }))
+    );
   }
 }
 
@@ -452,12 +518,27 @@ export async function sendPedidoFeedback(emails: string[]) {
       </div>
     `;
 
+  const text =
+    [
+      `Obrigado por teres estado connosco no FIRE ${EVENTO.edicao}!`,
+      "",
+      "Queremos saber a tua opinião para que nos possas ajudar a preparar a próxima edição.",
+      "",
+      `Dar o meu feedback: ${linkFeedback}`,
+      "",
+      "Podes responder de forma anónima — o nome é opcional.",
+    ].join("\n") + rodapeTexto();
+
   const subject = `FIRE ${EVENTO.edicao} — conta-nos como foi`;
 
   // Resend só aceita até 100 emails por chamada ao batch send.
   for (let i = 0; i < emails.length; i += 100) {
     const lote = emails.slice(i, i + 100);
-    await resend.batch.send(lote.map((to) => ({ from, to, subject, html })));
+    await resend.batch.send(
+      // replyTo: as respostas vão para a caixa que a equipa lê, e uma conversa
+      // real melhora a reputação do remetente.
+      lote.map((to) => ({ from, to, subject, html, text, replyTo: CONTACTOS.email }))
+    );
   }
 }
 

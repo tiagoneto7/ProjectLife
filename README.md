@@ -159,6 +159,16 @@ seguinte. Para mudar as datas, muda só `inicio` e `fim`.
 - No `/admin`, equipas e contas de qualquer edição continuam editáveis; as inscrições de edições
   passadas ficam só de leitura.
 
+### Emails que não caiam no spam
+
+Todos os emails para os inscritos levam **versão em texto simples** além do HTML e um
+**Reply-To** para o email de contacto. Sem a versão em texto, o Sapo mandava o email de feedback
+para o spam — foi testado com e sem, e é o que resolve. Quem mexer nos emails deve manter as duas
+versões (`html` e `text`) sempre que mudar o conteúdo.
+
+O domínio tem DKIM e SPF (via `send.projectlife.pt`); o DMARC está em `p=none`, e vale a pena
+acrescentar relatórios (`rua=`) antes de o apertar.
+
 ### Emails que falham a enviar (bounces)
 
 O `resend.batch.send()` só confirma que os emails foram colocados na fila — não avisa aqui se algum
