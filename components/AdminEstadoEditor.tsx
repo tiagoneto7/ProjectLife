@@ -111,14 +111,14 @@ export default function AdminEstadoEditor({
 
   return (
     <>
-      <div className="flex flex-col items-start gap-0.5">
+      <div className="flex min-w-0 flex-col items-start gap-0.5">
         {readOnly ? (
-          <span className="flex items-center gap-1.5 px-1.5 py-0.5">{conteudo}</span>
+          <span className="flex min-w-0 items-center gap-1.5 px-1.5 py-0.5">{conteudo}</span>
         ) : (
           <button
             type="button"
             onClick={abrir}
-            className="flex items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-black/5"
+            className="flex min-w-0 items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-black/5"
             title="Clicar para editar"
           >
             {conteudo}

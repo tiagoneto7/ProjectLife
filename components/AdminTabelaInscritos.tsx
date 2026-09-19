@@ -46,11 +46,11 @@ function DetailsCell({ items }: { items: { label: string; value: string }[] }) {
   if (filled.length === 0) return <span className="text-inksoft">—</span>;
 
   return (
-    <details className="group">
+    <details className="group min-w-0">
       <summary className="cursor-pointer list-none whitespace-nowrap text-sm text-ink underline decoration-dotted underline-offset-2 marker:content-none">
         Ver ({filled.length})
       </summary>
-      <div className="mt-1.5 min-w-[200px] space-y-1 text-xs text-inkmuted">
+      <div className="mt-1.5 w-full space-y-1 text-xs text-inkmuted">
         {filled.map((i) => (
           <p key={i.label}>
             <span className="text-inksoft">{i.label}:</span> {i.value}
@@ -65,11 +65,11 @@ function TextoCell({ texto }: { texto: string }) {
   if (!texto) return <span className="text-inksoft">—</span>;
 
   return (
-    <details className="group">
+    <details className="group min-w-0">
       <summary className="cursor-pointer list-none text-sm text-ink underline decoration-dotted underline-offset-2 marker:content-none">
         Ver
       </summary>
-      <p className="mt-1.5 min-w-[200px] max-w-[280px] text-xs text-inkmuted">{texto}</p>
+      <p className="mt-1.5 w-full max-w-[280px] break-words text-xs text-inkmuted">{texto}</p>
     </details>
   );
 }
@@ -271,7 +271,7 @@ export default function AdminTabelaInscritos({
             ];
 
             return (
-              <div key={inscrito.rowIndex} className="rounded-xl border border-line p-4">
+              <div key={inscrito.rowIndex} className="min-w-0 rounded-xl border border-line p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium text-ink">{inscrito.nome}</p>
@@ -287,7 +287,7 @@ export default function AdminTabelaInscritos({
                       })}
                     </p>
                   </div>
-                  <div className="flex-none text-sm">
+                  <div className="min-w-0 flex-none text-sm">
                     <AdminEstadoEditor
                       rowIndex={inscrito.rowIndex}
                       initialEstado={inscrito.estado}
@@ -302,7 +302,7 @@ export default function AdminTabelaInscritos({
                   <p className="truncate" title={inscrito.email}>
                     {inscrito.email}
                   </p>
-                  <p>
+                  <p className="break-words">
                     {inscrito.contacto}
                     {inscrito.contactoEmergencia && (
                       <span className="text-inksoft"> · emergência {inscrito.contactoEmergencia}</span>
@@ -314,7 +314,7 @@ export default function AdminTabelaInscritos({
                   <summary className="cursor-pointer list-none text-xs font-medium text-branddark marker:content-none">
                     Ver detalhes
                   </summary>
-                  <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <dl className="mt-2 grid grid-cols-2 gap-2 text-xs [&>div]:min-w-0">
                     <div>
                       <dt className="text-[10px] uppercase tracking-wide text-inksoft">
                         Data Nasc.
@@ -327,7 +327,7 @@ export default function AdminTabelaInscritos({
                       <dt className="text-[10px] uppercase tracking-wide text-inksoft">Menor 18</dt>
                       <dd className="text-ink">
                         {inscrito.menorDe18 === "Sim" ? (
-                          <span className="flex items-center gap-1.5">
+                          <span className="flex min-w-0 flex-wrap items-center gap-1.5">
                             Sim · <DetailsCell items={responsavelItems} />
                           </span>
                         ) : (

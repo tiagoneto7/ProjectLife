@@ -86,31 +86,41 @@ export default function SiteHeaderClient({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       {open && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-black/20 sm:hidden"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
-          <nav className="absolute inset-x-0 top-full z-50 flex flex-col gap-1 border-b border-line bg-surface px-6 py-3 text-sm text-inkmuted shadow-lg sm:hidden">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-2 py-2 hover:bg-surfacealt hover:text-ink"
-              >
-                {link.label}
-              </Link>
-            ))}
-            {isAdmin && (
-              <div className="px-2 py-2">
-                <AdminLogoutButton />
-              </div>
-            )}
-          </nav>
-        </>
+        <div
+          className="fixed inset-0 z-40 bg-black/20 sm:hidden"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
       )}
+
+      {/* Sempre no DOM (escondido quando fechado) para o /admin poder injetar
+          aqui os seus controlos — ver o slot no fim. */}
+      <nav
+        aria-hidden={!open}
+        className={
+          "absolute inset-x-0 top-full z-50 flex-col gap-1 border-b border-line bg-surface px-6 py-3 text-sm text-inkmuted shadow-lg sm:hidden " +
+          // Classe (e não o atributo hidden) porque o "flex" ganharia ao [hidden].
+          (open ? "flex" : "hidden")
+        }
+      >
+        {NAV_LINKS.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={() => setOpen(false)}
+            className="rounded-lg px-2 py-2 hover:bg-surfacealt hover:text-ink"
+          >
+            {link.label}
+          </Link>
+        ))}
+        {isAdmin && (
+          <div className="flex items-center justify-between gap-4 px-2 py-2">
+            <AdminLogoutButton />
+            {/* O /admin injeta aqui o ano e o modo de edição. */}
+            <span id="admin-edicao-slot-mobile" className="flex items-center gap-4 empty:hidden" />
+          </div>
+        )}
+      </nav>
     </header>
   );
 }

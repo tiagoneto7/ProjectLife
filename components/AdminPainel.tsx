@@ -69,7 +69,11 @@ export default function AdminPainel({
   const [separador, setSeparador] = useState<Separador>("inscricoes");
   // O ano vive no header, ao lado do "Sair" (ver SiteHeaderClient).
   const [slotEdicao, setSlotEdicao] = useState<HTMLElement | null>(null);
-  useEffect(() => setSlotEdicao(document.getElementById("admin-edicao-slot")), []);
+  const [slotMobile, setSlotMobile] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setSlotEdicao(document.getElementById("admin-edicao-slot"));
+    setSlotMobile(document.getElementById("admin-edicao-slot-mobile"));
+  }, []);
 
   // Inscrições: a edição muda a 1 de janeiro, por isso uma edição passada é
   // só de leitura.
@@ -173,8 +177,17 @@ export default function AdminPainel({
           </span>,
           slotEdicao
         )}
+      {/* Em ecrã pequeno vão os dois para dentro do menu, ao lado do "Sair". */}
+      {slotMobile &&
+        createPortal(
+          <>
+            {seletorEdicao}
+            <AdminModoEdicao ligado={podeEditar} />
+          </>,
+          slotMobile
+        )}
       <div className="mb-8 flex items-end justify-between gap-3 border-b border-line">
-        <div className="flex gap-5 overflow-x-auto sm:gap-6">
+        <div className="flex gap-5 overflow-x-auto overflow-y-hidden sm:gap-6">
           {separadores.map((s) => {
             const ativo = separador === s.id;
             return (
@@ -195,11 +208,6 @@ export default function AdminPainel({
           })}
         </div>
 
-        {/* Em mobile o "Sair" está dentro do menu, por isso o ano fica aqui. */}
-        <div className="mb-2 flex flex-none items-center gap-4 sm:hidden">
-          {seletorEdicao}
-          <AdminModoEdicao ligado={podeEditar} />
-        </div>
       </div>
 
       {separador === "inscricoes" && (
