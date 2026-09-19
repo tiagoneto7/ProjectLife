@@ -1,11 +1,14 @@
 import Image from "next/image";
 import FeedbackForm from "@/components/FeedbackForm";
-import { EVENTO } from "@/lib/evento";
+import { edicaoAtual } from "@/lib/evento";
 
 export const metadata = {
   title: "Feedback | Fire",
   description: "Conta-nos como foi o teu FIRE — Project Life",
 };
+
+// Gerada a cada visita: a edição do feedback muda com a data.
+export const dynamic = "force-dynamic";
 
 export default function FeedbackPage() {
   return (
@@ -24,7 +27,7 @@ export default function FeedbackPage() {
             <p className="mt-3 text-inkmuted">
               Queremos saber a tua opinião para que nos possas ajudar a preparar a próxima edição.
             </p>
-            <p className="mt-1 text-xs text-inksoft">FIRE {EVENTO.edicao}</p>
+            <p className="mt-1 text-xs text-inksoft">FIRE {edicaoAtual()}</p>
           </div>
         </header>
 

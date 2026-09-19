@@ -61,6 +61,8 @@ type Props = {
   edicao: number;
   /** Edição arquivada: dá para ver as equipas, mas não para alterar. */
   readOnly?: boolean;
+  /** Edição já encerrada: as equipas existentes editam-se, mas não se criam novas. */
+  arquivada?: boolean;
 };
 
 export default function AdminEquipas({
@@ -68,6 +70,7 @@ export default function AdminEquipas({
   inscritos,
   edicao,
   readOnly = false,
+  arquivada = false,
 }: Props) {
   const router = useRouter();
   const [equipas, setEquipas] = useState(equipasIniciais);
@@ -347,7 +350,7 @@ export default function AdminEquipas({
         )}
 
         <span className="flex-1" />
-        {!readOnly && (
+        {!readOnly && !arquivada && (
           <button
             type="button"
             onClick={() => setNovoAberto(true)}

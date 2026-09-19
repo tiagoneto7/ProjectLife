@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripeClient } from "@/lib/stripe";
-import { EVENTO } from "@/lib/evento";
-
-const VALOR_FIRE_CENTIMOS = EVENTO.valorCentimos;
+import { eventoAtual, fichaDaEdicao } from "@/lib/evento";
+import { getInscricaoPorLinha } from "@/lib/sheets";
 
 export async function POST(req: NextRequest) {
   const { rowIndex, email, nome } = await req.json().catch(() => ({}));
@@ -12,9 +11,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Cobra o valor da edição em que a pessoa se inscreveu (coluna X).
+    const inscrito = await getInscricaoPorLinha(rowIndex).catch(() => null);
+    const valorCentimos = (inscrito?.edicao ? fichaDaEdicao(inscrito.edicao) : eventoAtual())
+      .valorCentimos;
+
     const stripe = getStripeClient();
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: VALOR_FIRE_CENTIMOS,
+      amount: valorCentimos,
       currency: "eur",
       payment_method_types: ["mb_way", "card"],
       description: `Inscrição Fire — ${nome}`,

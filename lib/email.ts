@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import type { InscricaoInput } from "./validation";
-import { EVENTO } from "./evento";
+import { edicaoAtual, eventoAtual, fichaDaEdicao } from "./evento";
 
 const PAGAMENTO = {
   mbway: "+351 937780027",
@@ -11,6 +11,7 @@ const CONTACTOS = {
   whatsapp: "+351 962 032 936",
   email: "projectlife4all@gmail.com",
   redesSociais: "https://linktr.ee/project_life_",
+  website: "https://projectlife.pt",
 };
 
 /**
@@ -18,6 +19,8 @@ const CONTACTOS = {
  * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
  */
 export async function sendConfirmationEmail(data: InscricaoInput, rowIndex: number) {
+  // Acabou de se inscrever: é sempre a edição que o site está a anunciar.
+  const EVENTO = eventoAtual();
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FROM_EMAIL;
 
@@ -122,6 +125,7 @@ export async function sendConfirmationEmail(data: InscricaoInput, rowIndex: numb
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Website: <a href="${CONTACTOS.website}" style="color:#9a9a9a;">projectlife.pt</a></p>
         </div>
 
         <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>
@@ -208,6 +212,8 @@ type PagamentoConfirmadoData = {
   menorDe18: string;
   nomeResponsavel: string;
   contactoResponsavel: string;
+  /** Edição em que se inscreveu (coluna X); sem ela assume a atual. */
+  edicao?: number;
 };
 
 /**
@@ -215,6 +221,8 @@ type PagamentoConfirmadoData = {
  * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
  */
 export async function sendPaymentConfirmationEmail(data: PagamentoConfirmadoData) {
+  // Um pagamento pode chegar depois de o site mudar de edição — usa a da inscrição.
+  const EVENTO = data.edicao ? fichaDaEdicao(data.edicao) : eventoAtual();
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FROM_EMAIL;
 
@@ -254,6 +262,7 @@ export async function sendPaymentConfirmationEmail(data: PagamentoConfirmadoData
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Website: <a href="${CONTACTOS.website}" style="color:#9a9a9a;">projectlife.pt</a></p>
         </div>
 
         <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>
@@ -329,6 +338,8 @@ export async function sendCoordinatorPaymentNotification(data: PagamentoConfirma
  * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
  */
 export async function sendDocumentosFinais(emails: string[]) {
+  // Vai para os inscritos do FIRE do ano em curso (os dias são sempre 11 a 13/09).
+  const ano = edicaoAtual();
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FROM_EMAIL;
 
@@ -349,35 +360,36 @@ export async function sendDocumentosFinais(emails: string[]) {
               <img src="${siteUrl}/fire-logo.webp" alt="Fire" width="96" height="96" style="border-radius:50%; display:block;" />
             </td>
             <td style="vertical-align:middle;">
-              <h1 style="margin:0; font-size: 24px; color:#1F2430;">Informações do FIRE 2026</h1>
+              <h1 style="margin:0; font-size: 24px; color:#1F2430;">Informações do FIRE ${ano}</h1>
             </td>
           </tr>
         </table>
 
-        <p style="color:#5a5a5a;">É com grande entusiasmo que te damos as boas-vindas ao FIRE 2026!</p>
+        <p style="color:#5a5a5a;">É com grande entusiasmo que te damos as boas-vindas ao FIRE ${ano}!</p>
         <p style="color:#5a5a5a;">Prepara-te para uma experiência inesquecível, repleta de aventura, diversão, novas amizades e momentos que vão ficar na memória!</p>
         <p style="color:#5a5a5a;">Este ano, temos muitas novidades preparadas para ti e queremos garantir que chegas ao FIRE com tudo o que precisas de saber. Por isso, reunimos aqui as informações essenciais.</p>
 
-        <p style="color:#5a5a5a; margin: 20px 0 4px;">📅 Check-in — 11.09.2026, pelas 16h30</p>
+        <p style="color:#5a5a5a; margin: 20px 0 4px;">📅 Check-in — 11.09.${ano}, pelas 16h30</p>
         <p style="color:#5a5a5a; margin: 0 0 4px;">📍 FIRE campus — Rua Constantina Fernandes, CCI 2114, Brejos do Poço – Poceirão</p>
-        <p style="color:#5a5a5a; margin: 0 0 20px;">📅 Check-out — 13.09.2026, pelas 16h00</p>
+        <p style="color:#5a5a5a; margin: 0 0 20px;">📅 Check-out — 13.09.${ano}, pelas 16h00</p>
 
         <p style="color:#5a5a5a;">O teu monitor irá entrar em contacto contigo, pelo WhatsApp, durante os próximos dias, para combinar todos os pormenores e responder a qualquer questão que possas ter.<br />Fica atento às mensagens!</p>
         <p style="color:#5a5a5a;">Se tiveres alguma dúvida ou pergunta, não hesites em contactar-nos.</p>
 
-        <p style="color:#5a5a5a; margin-top:20px;">Até breve,<br />Equipa FIRE 2026</p>
+        <p style="color:#5a5a5a; margin-top:20px;">Até breve,<br />Equipa FIRE ${ano}</p>
 
         <div style="border-top: 1px solid #f0f0f0; margin-top: 24px; padding-top: 16px;">
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Website: <a href="${CONTACTOS.website}" style="color:#9a9a9a;">projectlife.pt</a></p>
         </div>
 
         <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>
       </div>
     `;
 
-  const subject = "FIRE 2026 — Informações";
+  const subject = `FIRE ${ano} — Informações`;
 
   // Resend só aceita até 100 emails por chamada ao batch send.
   for (let i = 0; i < emails.length; i += 100) {
@@ -391,6 +403,8 @@ export async function sendDocumentosFinais(emails: string[]) {
  * Configuração necessária (ver README.md): RESEND_API_KEY, FROM_EMAIL
  */
 export async function sendPedidoFeedback(emails: string[]) {
+  // O feedback é sobre o FIRE do ano em curso (a edição muda a 1 de janeiro).
+  const EVENTO = { edicao: edicaoAtual() };
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.FROM_EMAIL;
 
@@ -430,6 +444,7 @@ export async function sendPedidoFeedback(emails: string[]) {
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Whatsapp: ${CONTACTOS.whatsapp}</p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Email: <a href="mailto:${CONTACTOS.email}" style="color:#9a9a9a;">${CONTACTOS.email}</a></p>
           <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Redes sociais: <a href="${CONTACTOS.redesSociais}" style="color:#9a9a9a;">${CONTACTOS.redesSociais}</a></p>
+          <p style="margin: 3px 0; font-size:12px; color:#9a9a9a;">Website: <a href="${CONTACTOS.website}" style="color:#9a9a9a;">projectlife.pt</a></p>
         </div>
 
         <p style="margin-top: 24px; color:#9a9a9a; font-size:13px; text-align:center;">Associação Project Life</p>

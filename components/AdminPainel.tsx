@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { InscritoRow, Equipa, Movimento, Feedback } from "@/lib/sheets";
-import { EVENTO, edicaoAtual, edicaoDaData } from "@/lib/evento";
+import { edicaoAtual, edicaoDaData, fichaDaEdicao } from "@/lib/evento";
 import { ehVagaSocial, pagou } from "@/lib/estados";
+import { ehCategoriaInscricoes } from "@/lib/contas";
 import { agruparDestinatarios } from "@/components/AdminListaDestinatarios";
 import AdminTabelaInscritos from "@/components/AdminTabelaInscritos";
 import AdminEquipas from "@/components/AdminEquipas";
@@ -27,12 +28,13 @@ const temRestricao = (texto: string) =>
 export default function AdminPainel({ inscritos, equipas, movimentos, feedback }: Props) {
   const atual = edicaoAtual();
 
-  // A edição de cada inscrito sai da data de inscrição — nada é lido nem
-  // escrito na Sheet só para arquivar.
+  // A edição de cada inscrito é a gravada na coluna X no momento da inscrição
+  // (a do FIRE que o site anunciava). Só as linhas antigas sem ela é que a
+  // deduzem pela data.
   const porEdicao = useMemo(() => {
     const mapa = new Map<number, InscritoRow[]>();
     for (const inscrito of inscritos) {
-      const ano = edicaoDaData(new Date(inscrito.data));
+      const ano = inscrito.edicao || edicaoDaData(new Date(inscrito.data));
       const lista = mapa.get(ano) ?? [];
       lista.push(inscrito);
       mapa.set(ano, lista);
@@ -42,9 +44,11 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
 
   const edicoes = useMemo(() => {
     const anos = new Set(porEdicao.keys());
+    // Edições anteriores ao site só existem nas Contas (ex: o resumo de 2025).
+    for (const m of movimentos) if (m.edicao) anos.add(m.edicao);
     anos.add(atual);
     return Array.from(anos).sort((a, b) => b - a);
-  }, [porEdicao, atual]);
+  }, [porEdicao, movimentos, atual]);
 
   // Abre na edição atual, mas se ela ainda estiver vazia mostra a mais recente
   // que tenha inscritos — evita cair num ecrã vazio entre edições.
@@ -58,14 +62,13 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
   const [slotEdicao, setSlotEdicao] = useState<HTMLElement | null>(null);
   useEffect(() => setSlotEdicao(document.getElementById("admin-edicao-slot")), []);
 
-  // Inscrições: fecham alguns dias depois do FIRE (ver DIAS_ATE_ARQUIVAR),
-  // por isso uma edição passada é só de leitura.
+  // Inscrições: a edição muda a 1 de janeiro, por isso uma edição passada é
+  // só de leitura.
   const arquivada = edicao !== atual;
-  // Contas e feedback: editáveis da edição em curso para a frente — uma
-  // fatura pode chegar depois de as inscrições fecharem, e já se pode gastar
-  // dinheiro (ex: sinal do espaço) na edição seguinte. Só as edições
-  // anteriores à que está a ser organizada ficam de leitura.
-  const edicaoEditavel = edicao >= EVENTO.edicao;
+  // Equipas e contas ficam editáveis em qualquer edição (faturas e lugares
+  // finais chegam depois do fecho). O pedido de feedback só na edição atual —
+  // é essa a que o formulário grava.
+  const pedeFeedback = edicao === atual;
   const visiveis = porEdicao.get(edicao) ?? [];
 
   const restricoesFisicas = visiveis
@@ -79,12 +82,38 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
     .map((i) => ({ nome: i.nome, texto: i.alergias }));
 
   const equipasDaEdicao = equipas.filter((e) => e.edicao === edicao);
-  const movimentosDaEdicao = movimentos.filter((m) => m.edicao === edicao);
   const feedbackDaEdicao = feedback.filter((f) => f.edicao === edicao);
-  // Pagos = só quem pagou mesmo (sem vagas sociais) — é o que conta para a receita.
-  const totalPagos = visiveis.filter((i) => pagou(i.estado)).length;
-  const totalSociais = visiveis.filter((i) => ehVagaSocial(i.estado)).length;
-  const receitaCentimos = totalPagos * EVENTO.valorCentimos;
+  const contas = resumoContas(edicao);
+  // Só compara quando a edição anterior tem alguma coisa registada.
+  const contasAnterior = resumoContas(edicao - 1);
+  const temAnterior = contasAnterior.movimentos.length > 0 || contasAnterior.receitaCentimos > 0;
+
+  /**
+   * Movimentos e receita de inscrições de uma edição. Pagos = só quem pagou
+   * (sem vagas sociais). Nas edições anteriores ao site não há inscritos, e as
+   * inscrições vêm das entradas registadas à mão nessa categoria.
+   */
+  function resumoContas(ano: number) {
+    const inscritosAno = porEdicao.get(ano) ?? [];
+    const doAno = movimentos.filter((m) => m.edicao === ano);
+    const manuais = doAno.filter((m) => m.tipo === "entrada" && ehCategoriaInscricoes(m.categoria));
+    const totalPagos = inscritosAno.filter((i) => pagou(i.estado)).length;
+    const valorInscricao = fichaDaEdicao(ano).valorCentimos;
+    return {
+      movimentos: doAno.filter((m) => !manuais.includes(m)),
+      receitaCentimos:
+        totalPagos * valorInscricao + manuais.reduce((t, m) => t + m.valorCentimos, 0),
+      inscricoesManuais: manuais,
+      totalPagos,
+      totalSociais: inscritosAno.filter((i) => ehVagaSocial(i.estado)).length,
+      // Quem veio (pagos + sociais). Antes do site não há inscritos: estima-se
+      // pelas inscrições registadas à mão ÷ valor da inscrição.
+      participantes:
+        inscritosAno.length > 0
+          ? inscritosAno.filter((i) => pagou(i.estado) || ehVagaSocial(i.estado)).length
+          : Math.round(manuais.reduce((t, m) => t + m.valorCentimos, 0) / valorInscricao),
+    };
+  }
 
   const destinatarios = agruparDestinatarios(visiveis);
 
@@ -167,20 +196,16 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           equipas={equipasDaEdicao}
           inscritos={visiveis}
           edicao={edicao}
-          // Como as contas: o lugar final só se sabe depois do FIRE, por isso
-          // as equipas da edição em curso continuam editáveis após o fecho.
-          readOnly={!edicaoEditavel}
+          arquivada={arquivada}
         />
       )}
 
       {separador === "contas" && (
         <AdminContas
-          movimentos={movimentosDaEdicao}
-          receitaCentimos={receitaCentimos}
-          totalPagos={totalPagos}
-          totalSociais={totalSociais}
+          {...contas}
+          anterior={temAnterior ? contasAnterior : undefined}
           edicao={edicao}
-          readOnly={!edicaoEditavel}
+          arquivada={arquivada}
         />
       )}
       {separador === "feedback" && (
@@ -189,7 +214,7 @@ export default function AdminPainel({ inscritos, equipas, movimentos, feedback }
           destinatarios={destinatarios}
           totalConvidados={visiveis.length}
           edicao={edicao}
-          readOnly={!edicaoEditavel}
+          readOnly={!pedeFeedback}
         />
       )}
     </div>

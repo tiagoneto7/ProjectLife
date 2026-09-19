@@ -1,46 +1,50 @@
 /**
- * Dados do FIRE e regra de arquivo por edição.
+ * Dados do FIRE e regra de mudança de edição.
  *
- * É o único sítio onde a data do evento está definida — muda aqui de ano para
- * ano e o site, os emails e o arquivo do /admin acompanham.
+ * Dias, local e valor são sempre os mesmos — só o ano muda. A edição "atual"
+ * não se escreve à mão: é o ano de hoje, e passa sozinha para a seguinte a
+ * 1 de janeiro (site, emails, Sheet e /admin ao mesmo tempo).
  */
-export const EVENTO = {
-  /** Ano da edição que está a ser organizada. */
-  edicao: 2026,
-  /** Dia e mês em que a edição termina (o ano vem de `edicao`). */
-  fim: { dia: 13, mes: 9 },
-
-  datasLabel: "11, 12 e 13 de Setembro, 2026",
+const FIRE = {
+  dias: "11, 12 e 13 de Setembro",
   local: "Rua Constantina Fernandes Nº 15, Poceirão",
   valor: "35€",
   valorCentimos: 3500,
 };
 
-/** Dias depois do fim do FIRE em que as inscrições dessa edição fecham. */
-export const DIAS_ATE_ARQUIVAR = 5;
+export type Evento = {
+  edicao: number;
+  datasLabel: string;
+  local: string;
+  valor: string;
+  valorCentimos: number;
+};
 
-/**
- * Instante (inclusive) em que fecham as inscrições da edição de `ano`.
- * Ex: FIRE a terminar a 13/09 fecha as inscrições no fim do dia 18/09.
- */
-export function fechoDasInscricoes(ano: number): Date {
-  return new Date(
-    Date.UTC(ano, EVENTO.fim.mes - 1, EVENTO.fim.dia + DIAS_ATE_ARQUIVAR, 23, 59, 59, 999)
-  );
+/** Dados de uma edição: os fixos do FIRE com o ano dessa edição. */
+export function fichaDaEdicao(ano: number): Evento {
+  return {
+    edicao: ano,
+    datasLabel: `${FIRE.dias}, ${ano}`,
+    local: FIRE.local,
+    valor: FIRE.valor,
+    valorCentimos: FIRE.valorCentimos,
+  };
 }
 
 /**
- * A que edição pertence uma inscrição feita nesta data: à edição desse ano se
- * ainda for dentro do prazo, senão já conta para a edição seguinte.
+ * A que edição pertence uma inscrição feita nesta data: à do próprio ano.
+ * A edição muda a 1 de janeiro (depois do FIRE, o botão de inscrição esconde-se).
  */
 export function edicaoDaData(data: Date): number {
-  if (Number.isNaN(data.getTime())) return EVENTO.edicao;
-
-  const ano = data.getUTCFullYear();
-  return data.getTime() <= fechoDasInscricoes(ano).getTime() ? ano : ano + 1;
+  return Number.isNaN(data.getTime()) ? new Date().getUTCFullYear() : data.getUTCFullYear();
 }
 
 /** A edição que está a receber inscrições neste momento. */
 export function edicaoAtual(agora: Date = new Date()): number {
   return edicaoDaData(agora);
+}
+
+/** Dados da edição que está a receber inscrições neste momento. */
+export function eventoAtual(agora: Date = new Date()): Evento {
+  return fichaDaEdicao(edicaoAtual(agora));
 }

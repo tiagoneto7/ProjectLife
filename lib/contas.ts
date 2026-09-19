@@ -7,8 +7,17 @@ export const TIPOS: Record<TipoMovimento, string> = {
   saida: "Saída",
 };
 
-/** As inscrições entram sozinhas (pagos × valor) — nunca se registam à mão. */
+/**
+ * As inscrições entram sozinhas (pagos × valor) a partir da primeira edição
+ * feita pelo site. Nas anteriores não há inscritos no sistema, por isso aí o
+ * total de inscrições regista-se à mão, como entrada nesta categoria.
+ */
 export const CATEGORIA_INSCRICOES = "Inscrições";
+export const PRIMEIRA_EDICAO_NO_SITE = 2026;
+
+export function ehCategoriaInscricoes(categoria: string): boolean {
+  return categoria.trim().toLowerCase() === CATEGORIA_INSCRICOES.toLowerCase();
+}
 
 /**
  * Categorias que existem em todas as edições. As restantes são criadas na hora

@@ -19,7 +19,7 @@ export default function Home() {
         </p>
 
         <Link
-          href="/fire"
+          href="/fire/inscrever"
           className="mt-8 inline-block rounded-lg bg-brand px-7 py-3.5 font-bold text-white transition hover:bg-branddark"
         >
           Inscreve-te no Fire

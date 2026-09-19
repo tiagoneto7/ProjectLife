@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import type { InscricaoInput } from "./validation";
-import { EVENTO } from "./evento";
+import { edicaoAtual } from "./evento";
 import { TIPOS, lerTipo, type TipoMovimento } from "./contas";
 
 const SHEET_RANGE = "Inscrições!A:X";
@@ -67,7 +67,7 @@ export async function appendInscricaoToSheet(data: InscricaoInput): Promise<numb
           "", // U Nota
           "", // V OrigemPagamento
           "", // W EquipaId
-          EVENTO.edicao, // X Edição — gravada agora para o arquivo não mudar depois
+          edicaoAtual(), // X Edição — gravada agora para o arquivo não mudar depois
         ],
       ],
     },

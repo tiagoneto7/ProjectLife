@@ -4,8 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Movimento } from "@/lib/sheets";
 import { useCloseOnEscape } from "@/lib/useCloseOnEscape";
-import { EVENTO } from "@/lib/evento";
-import { CATEGORIAS_FIXAS, TIPOS, ehCategoriaFixa, type TipoMovimento } from "@/lib/contas";
+import { fichaDaEdicao } from "@/lib/evento";
+import {
+  CATEGORIAS_FIXAS,
+  CATEGORIA_INSCRICOES,
+  PRIMEIRA_EDICAO_NO_SITE,
+  TIPOS,
+  ehCategoriaFixa,
+  type TipoMovimento,
+} from "@/lib/contas";
 
 function euros(centimos: number): string {
   return (centimos / 100).toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
@@ -33,14 +40,46 @@ function lerValor(valor: string): number {
 
 type Filtro = "todos" | TipoMovimento;
 
-type Props = {
+type ResumoContas = {
+  /** Movimentos da edição, sem as inscrições registadas à mão. */
   movimentos: Movimento[];
+  /** Pagos × valor, mais as inscrições registadas à mão (edições antes do site). */
   receitaCentimos: number;
+  inscricoesManuais: Movimento[];
+  /** Pagos + sociais — para os valores por pessoa. */
+  participantes: number;
+};
+
+type Props = ResumoContas & {
   totalPagos: number;
   totalSociais: number;
   edicao: number;
+  /** Edição anterior, para a variação; ausente quando não tem nada registado. */
+  anterior?: ResumoContas;
   readOnly?: boolean;
+  /** Ano passado: os movimentos existentes editam-se, mas não se adicionam novos. */
+  arquivada?: boolean;
 };
+
+/** Totais por categoria de um resumo — usado para a edição atual e a anterior. */
+function totaisDe(resumo: ResumoContas) {
+  const soma = (lista: Movimento[]) => lista.reduce((t, m) => t + m.valorCentimos, 0);
+  const entradas = resumo.movimentos.filter((m) => m.tipo === "entrada");
+  const saidas = resumo.movimentos.filter((m) => m.tipo === "saida");
+  const totalEntradas = resumo.receitaCentimos + soma(entradas);
+  const totalSaidas = soma(saidas);
+  return {
+    totalEntradas,
+    totalSaidas,
+    saldo: totalEntradas - totalSaidas,
+    categoria: (tipo: TipoMovimento, nome: string) =>
+      soma(
+        (tipo === "entrada" ? entradas : saidas).filter(
+          (m) => m.categoria.toLowerCase() === nome.toLowerCase()
+        )
+      ),
+  };
+}
 
 type Formulario = {
   rowIndex?: number;
@@ -70,10 +109,14 @@ function formularioVazio(tipo: TipoMovimento): Formulario {
 export default function AdminContas({
   movimentos,
   receitaCentimos,
+  inscricoesManuais,
+  participantes,
+  anterior,
   totalPagos,
   totalSociais,
   edicao,
   readOnly = false,
+  arquivada = false,
 }: Props) {
   const router = useRouter();
   const [filtro, setFiltro] = useState<Filtro>("todos");
@@ -127,7 +170,33 @@ export default function AdminContas({
   );
   const maxSaidas = Math.max(0, ...[...catSaidas.fixas, ...catSaidas.criadas].map((c) => c.total));
 
-  const visiveis = movimentos
+  const ant = anterior ? totaisDe(anterior) : null;
+  const anoAnterior = edicao - 1;
+  /** Variação de um valor face à edição anterior (nada quando não há comparação). */
+  const variacao = (
+    tipo: TipoMovimento,
+    atual: number,
+    antes: number | undefined,
+    porPessoa = false
+  ) =>
+    ant && antes !== undefined ? (
+      <Variacao
+        tipo={tipo}
+        atual={atual}
+        anterior={antes}
+        ano={anoAnterior}
+        // Por pessoa tira o efeito de virem mais ou menos pessoas (ex: Alimentação).
+        pessoas={
+          porPessoa && participantes > 0 && anterior && anterior.participantes > 0
+            ? { atual: participantes, anterior: anterior.participantes }
+            : undefined
+        }
+      />
+    ) : undefined;
+
+  // As inscrições à mão não entram nas categorias, mas aparecem na lista para se poderem editar.
+  const todosMovimentos = [...movimentos, ...inscricoesManuais];
+  const visiveis = todosMovimentos
     .filter((m) => filtro === "todos" || m.tipo === filtro)
     .sort((a, b) => b.data.localeCompare(a.data) || b.rowIndex - a.rowIndex);
 
@@ -219,14 +288,17 @@ export default function AdminContas({
   }
 
   const opcoesFiltro: { valor: Filtro; label: string; total: number }[] = [
-    { valor: "todos", label: "Todos", total: movimentos.length },
-    { valor: "entrada", label: "Entradas", total: entradas.length },
+    { valor: "todos", label: "Todos", total: todosMovimentos.length },
+    { valor: "entrada", label: "Entradas", total: entradas.length + inscricoesManuais.length },
     { valor: "saida", label: "Saídas", total: saidas.length },
   ];
 
   // Categorias disponíveis na modal: fixas + as já usadas nesta edição para esse tipo.
+  // Antes do site, as inscrições também se registam aqui.
+  const inscricoesAMao = form?.tipo === "entrada" && edicao < PRIMEIRA_EDICAO_NO_SITE;
   const categoriasDoForm = form
     ? [
+        ...(inscricoesAMao ? [CATEGORIA_INSCRICOES] : []),
         ...CATEGORIAS_FIXAS[form.tipo],
         ...(form.tipo === "entrada" ? catEntradas : catSaidas).criadas.map((c) => c.nome),
       ]
@@ -239,9 +311,40 @@ export default function AdminContas({
   return (
     <div>
       <div className="mb-4 grid gap-2.5 sm:grid-cols-3">
-        <Cartao titulo="Entradas" valor={`+${euros(totalEntradas)}`} tom="bom" />
-        <Cartao titulo="Saídas" valor={`−${euros(totalSaidas)}`} />
-        <Cartao titulo="Saldo" valor={euros(saldo)} tom={saldo < 0 ? "mau" : "bom"} destaque />
+        <Cartao
+          titulo="Entradas"
+          valor={`+${euros(totalEntradas)}`}
+          tom="bom"
+          rodape={
+            ant && (
+              <>
+                <Pilula tipo="entrada" atual={totalEntradas} anterior={ant.totalEntradas} /> vs{" "}
+                {euros(ant.totalEntradas)} em {anoAnterior}
+              </>
+            )
+          }
+        />
+        <Cartao
+          titulo="Saídas"
+          valor={`−${euros(totalSaidas)}`}
+          rodape={
+            ant && (
+              <>
+                <Pilula tipo="saida" atual={totalSaidas} anterior={ant.totalSaidas} /> vs{" "}
+                {euros(ant.totalSaidas)} em {anoAnterior}
+              </>
+            )
+          }
+        />
+        <Cartao
+          titulo="Saldo"
+          valor={euros(saldo)}
+          tom={saldo < 0 ? "mau" : "bom"}
+          destaque
+          rodape={
+            ant && `em ${anoAnterior}: ${ant.saldo > 0 ? "+" : ""}${euros(ant.saldo)}`
+          }
+        />
       </div>
 
       <div className="mb-8 grid gap-3 lg:grid-cols-2">
@@ -249,27 +352,35 @@ export default function AdminContas({
           titulo="Entradas"
           total={totalEntradas}
           tom="bom"
+          variacao={variacao("entrada", totalEntradas, ant?.totalEntradas)}
           nota={
-            <>
-              Inscrições = {totalPagos} {totalPagos === 1 ? "pago" : "pagos"} × {euros(EVENTO.valorCentimos)}
-              {totalSociais > 0 &&
-                ` · ${totalSociais} ${totalSociais === 1 ? "vaga social não conta" : "vagas sociais não contam"}`}
-            </>
+            inscricoesManuais.length > 0 && totalPagos === 0 ? (
+              "Inscrições registadas à mão (edição anterior ao site)."
+            ) : (
+              <>
+                Inscrições = {totalPagos} {totalPagos === 1 ? "pago" : "pagos"} ×{" "}
+                {euros(fichaDaEdicao(edicao).valorCentimos)}
+                {totalSociais > 0 &&
+                  ` · ${totalSociais} ${totalSociais === 1 ? "vaga social não contabilizada" : "vagas sociais não contabilizadas"}`}
+              </>
+            )
           }
         >
           <LinhaCategoria
             nome="Inscrições"
-            etiqueta="auto"
+            etiqueta={inscricoesManuais.length > 0 ? undefined : "auto"}
             total={receitaCentimos}
             max={maxEntradas}
             cor="bg-brand"
             fixa
+            variacao={variacao("entrada", receitaCentimos, anterior?.receitaCentimos)}
           />
           {catEntradas.fixas.map((c) => (
             <LinhaCategoria
               key={c.nome}
               nome={c.nome}
               total={c.total}
+              variacao={variacao("entrada", c.total, ant?.categoria("entrada", c.nome))}
               max={maxEntradas}
               cor="bg-brand"
               fixa
@@ -281,18 +392,29 @@ export default function AdminContas({
               key={c.nome}
               nome={c.nome}
               total={c.total}
+              variacao={variacao("entrada", c.total, ant?.categoria("entrada", c.nome))}
               max={maxEntradas}
               cor="bg-brand"
             />
           ))}
         </Quadro>
 
-        <Quadro titulo="Saídas" total={totalSaidas}>
+        <Quadro
+          titulo="Saídas"
+          total={totalSaidas}
+          variacao={variacao("saida", totalSaidas, ant?.totalSaidas)}
+        >
           {catSaidas.fixas.map((c) => (
             <LinhaCategoria
               key={c.nome}
               nome={c.nome}
               total={c.total}
+              variacao={variacao(
+                "saida",
+                c.total,
+                ant?.categoria("saida", c.nome),
+                c.nome === "Alimentação"
+              )}
               max={maxSaidas}
               cor="bg-ink"
               fixa
@@ -304,6 +426,7 @@ export default function AdminContas({
               key={c.nome}
               nome={c.nome}
               total={c.total}
+              variacao={variacao("saida", c.total, ant?.categoria("saida", c.nome))}
               max={maxSaidas}
               cor="bg-inkmuted"
             />
@@ -331,7 +454,7 @@ export default function AdminContas({
           ))}
         </div>
         <span className="flex-1" />
-        {!readOnly && (
+        {!readOnly && !arquivada && (
           <button
             type="button"
             onClick={abrirNovo}
@@ -626,11 +749,13 @@ function Cartao({
   valor,
   tom,
   destaque,
+  rodape,
 }: {
   titulo: string;
   valor: string;
   tom?: "bom" | "mau";
   destaque?: boolean;
+  rodape?: React.ReactNode;
 }) {
   const cor = tom === "bom" ? "text-branddark" : tom === "mau" ? "text-red-700" : "text-ink";
   const fundo =
@@ -639,25 +764,95 @@ function Cartao({
     <div className={"rounded-xl border px-4 py-3 " + fundo}>
       <p className="text-[11px] uppercase tracking-wide text-inksoft">{titulo}</p>
       <p className={"mt-0.5 text-xl font-bold tabular-nums " + cor}>{valor}</p>
+      {rodape && (
+        <p
+          className={
+            "mt-1 text-[11px] tabular-nums " +
+            (destaque && tom === "mau" ? "text-red-700/70" : "text-inksoft")
+          }
+        >
+          {rodape}
+        </p>
+      )}
     </div>
   );
 }
 
-// Nome · barra · valor · "fixa" — partilhada pelas linhas e pelo total, para alinharem.
+/** % de variação arredondada; null quando não há base de comparação. */
+function percentagem(atual: number, anterior: number): number | null {
+  if (anterior === 0) return null;
+  return Math.round((atual / anterior - 1) * 100);
+}
+
+/** Subir é bom nas entradas e mau nas saídas. */
+function ehBom(tipo: TipoMovimento, pct: number) {
+  return tipo === "entrada" ? pct > 0 : pct < 0;
+}
+
+function Pilula({ tipo, atual, anterior }: { tipo: TipoMovimento; atual: number; anterior: number }) {
+  const pct = percentagem(atual, anterior);
+  if (pct === null) return null;
+  const cor =
+    pct === 0 ? "bg-surfacealt text-inkmuted" : ehBom(tipo, pct) ? "bg-brand/15 text-branddark" : "bg-red-50 text-red-700";
+  return (
+    <span className={"rounded-full px-1.5 py-0.5 font-semibold " + cor}>
+      {pct > 0 ? "▲" : pct < 0 ? "▼" : ""} {Math.abs(pct)}%
+    </span>
+  );
+}
+
+/** Variação discreta na coluna da direita dos quadros: verde se é bom, laranja se é mau. */
+function Variacao({
+  tipo,
+  atual,
+  anterior,
+  ano,
+  pessoas,
+}: {
+  tipo: TipoMovimento;
+  atual: number;
+  anterior: number;
+  ano: number;
+  pessoas?: { atual: number; anterior: number };
+}) {
+  if (anterior === 0) {
+    return atual > 0 ? <span className="text-inksoft">novo</span> : null;
+  }
+  const pct = percentagem(atual, anterior) ?? 0;
+  const cor = pct === 0 ? "text-inksoft" : ehBom(tipo, pct) ? "text-branddark" : "text-orange-700";
+  return (
+    <span
+      className={"cursor-help " + cor}
+      title={
+        pessoas
+          ? `Em ${ano}: ${euros(anterior)} (${euros(anterior / pessoas.anterior)} por pessoa) · ` +
+            `Em ${ano + 1}: ${euros(atual / pessoas.atual)} por pessoa`
+          : `Em ${ano}: ${euros(anterior)}`
+      }
+    >
+      {pct > 0 ? "+" : pct < 0 ? "−" : ""}
+      {Math.abs(pct)}%
+    </span>
+  );
+}
+
+// Nome · barra · valor · variação (ou "fixa") — partilhada pelas linhas e pelo total, para alinharem.
 const GRELHA_LINHA =
-  "grid grid-cols-[minmax(0,11rem)_1fr_5.5rem_2.25rem] items-center gap-3 text-sm";
+  "grid grid-cols-[minmax(0,11rem)_1fr_5.5rem_2.75rem] items-center gap-3 text-sm";
 
 function Quadro({
   titulo,
   total,
   tom,
   nota,
+  variacao,
   children,
 }: {
   titulo: string;
   total: number;
   tom?: "bom";
   nota?: React.ReactNode;
+  variacao?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -675,7 +870,7 @@ function Quadro({
         >
           {euros(total)}
         </span>
-        <span />
+        <span className="text-right text-[11px] tabular-nums text-inksoft">{variacao}</span>
       </div>
       {nota && <p className="mt-2 text-[11px] text-inksoft">{nota}</p>}
     </section>
@@ -689,6 +884,7 @@ function LinhaCategoria({
   max,
   cor,
   fixa,
+  variacao,
 }: {
   nome: string;
   etiqueta?: string;
@@ -696,6 +892,8 @@ function LinhaCategoria({
   max: number;
   cor: string;
   fixa?: boolean;
+  /** Quando há edição anterior, substitui a etiqueta "fixa". */
+  variacao?: React.ReactNode;
 }) {
   const vazia = total === 0;
   return (
@@ -719,7 +917,9 @@ function LinhaCategoria({
       <span className={"text-right tabular-nums " + (vazia ? "text-inksoft" : "font-medium text-ink")}>
         {euros(total)}
       </span>
-      <span className="text-center text-[10px] text-inksoft">{fixa ? "fixa" : ""}</span>
+      <span className="text-right text-[11px] tabular-nums text-inksoft">
+        {variacao !== undefined ? variacao : fixa ? "fixa" : ""}
+      </span>
     </div>
   );
 }

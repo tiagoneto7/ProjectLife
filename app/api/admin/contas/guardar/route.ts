@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ADMIN_SESSION_COOKIE, isValidAdminSession } from "@/lib/auth";
 import { atualizarMovimento, criarMovimento } from "@/lib/sheets";
-import { CATEGORIA_INSCRICOES, normalizarCategoria, type TipoMovimento } from "@/lib/contas";
+import {
+  CATEGORIA_INSCRICOES,
+  PRIMEIRA_EDICAO_NO_SITE,
+  ehCategoriaInscricoes,
+  normalizarCategoria,
+  type TipoMovimento,
+} from "@/lib/contas";
 
 const texto = (valor: unknown, max: number) =>
   typeof valor === "string" ? valor.trim().slice(0, max) : "";
@@ -38,8 +44,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
   }
 
-  // As inscrições são calculadas a partir dos inscritos — registá-las à mão contava-as duas vezes.
-  if (categoria.toLowerCase() === CATEGORIA_INSCRICOES.toLowerCase()) {
+  // Desde que há inscrições pelo site, são calculadas a partir dos inscritos —
+  // registá-las à mão contava-as duas vezes. Só as edições anteriores as levam à mão.
+  if (
+    ehCategoriaInscricoes(categoria) &&
+    (tipo !== "entrada" || edicao >= PRIMEIRA_EDICAO_NO_SITE)
+  ) {
     return NextResponse.json(
       { error: "As inscrições entram sozinhas — escolhe outra categoria." },
       { status: 400 }
@@ -50,7 +60,9 @@ export async function POST(req: NextRequest) {
     tipo: tipo as TipoMovimento,
     data,
     titulo,
-    categoria: normalizarCategoria(tipo, categoria),
+    categoria: ehCategoriaInscricoes(categoria)
+      ? CATEGORIA_INSCRICOES
+      : normalizarCategoria(tipo, categoria),
     pagoPor: tipo === "saida" ? texto(corpo.pagoPor, 80) : "",
     valorCentimos: Math.round(valorCentimos),
     comprovativo: texto(corpo.comprovativo, 500),

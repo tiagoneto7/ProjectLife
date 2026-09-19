@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import SocialLinks from "@/components/SocialLinks";
+import AnoAtual from "@/components/AnoAtual";
 
 const NAV_LINKS = [
   { href: "/", label: "Início" },
@@ -70,7 +71,7 @@ export default function SiteFooter() {
         </div>
 
         <p className="mt-10 border-t border-line pt-6 text-center text-xs text-inksoft">
-          © {year} Associação Project Life
+          © <AnoAtual inicial={year} /> Associação Project Life
         </p>
       </div>
     </footer>

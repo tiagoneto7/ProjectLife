@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { feedbackSchema } from "@/lib/validation";
 import { guardarFeedback } from "@/lib/sheets";
-import { EVENTO } from "@/lib/evento";
+import { edicaoAtual } from "@/lib/evento";
 
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       comida: simNao(parsed.data.comida),
       espaco: simNao(parsed.data.espaco),
       avaliacao: parsed.data.avaliacao,
-      edicao: EVENTO.edicao,
+      edicao: edicaoAtual(),
     });
   } catch (err) {
     console.error("Erro ao guardar o feedback na Google Sheet:", err);

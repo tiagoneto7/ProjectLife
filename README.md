@@ -129,23 +129,23 @@ sua aba na Google Sheet:
 Enquanto uma destas abas não existir, o separador aparece vazio e o erro fica só no log — o
 `/admin` continua a funcionar normalmente.
 
-### Arquivo por edição
+### Edições e mudança de ano
 
-As inscrições de cada edição do FIRE fecham **5 dias depois do fim do evento**
-(`DIAS_ATE_ARQUIVAR` em `lib/evento.ts`). A partir daí ficam no separador da edição desse ano,
-só para consulta, e as inscrições novas passam a contar para a edição seguinte — para a próxima
-edição começar com a página limpa.
+A edição que recebe inscrições **é a do ano civil e muda sozinha a 1 de janeiro** (`lib/evento.ts`).
+Depois do FIRE, esconde-se o botão de inscrição até ao ano seguinte.
+Site, formulário, emails, Sheet e `/admin` usam todos a mesma regra, e as páginas são geradas a
+cada visita, por isso a troca não precisa de novo deploy.
 
-A edição fica gravada na coluna **X** da aba "Inscrições" no momento da inscrição (se estiver vazia,
-é deduzida da data da coluna A, para linhas antigas). Guardá-la evita que o arquivo se reescreva
-sozinho: a dedução usa um único `EVENTO.fim` para todos os anos, por isso mudar as datas do FIRE
-num ano futuro reclassificaria inscrições passadas. As contas, as equipas e o feedback guardam a
-edição pela mesma razão.
+Dias (11, 12 e 13 de Setembro), local e valor (35€) são fixos em `FIRE` (`lib/evento.ts`) — só o
+ano muda, sozinho. Se um dia mudarem, é esse o único sítio a alterar.
 
-**De ano para ano**, muda só o `lib/evento.ts` (`edicao`, `fim`, `datasLabel`, `local`, `valor`) —
-é o único sítio onde a data do FIRE está definida e daí acompanha o site, os emails e o arquivo.
-Enquanto o `edicao` não for atualizado, as contas, as equipas e o feedback dessa edição continuam a poder ser
-registados.
+- A edição de cada inscrição fica gravada na coluna **X** da aba "Inscrições" no momento da
+  inscrição; o `/admin`, a página de confirmação, o pagamento e o email de pagamento confirmado usam
+  sempre essa (quem se inscreveu em 2026 paga e vê os dados de 2026, mesmo depois da troca).
+  Linhas antigas sem coluna X deduzem a edição pela data.
+- O **feedback** também usa o ano civil: as respostas de 2026 ficam em 2026 até 31/12.
+- No `/admin`, equipas e contas de qualquer edição continuam editáveis; as inscrições de edições
+  passadas ficam só de leitura.
 
 ### Emails que falham a enviar (bounces)
 

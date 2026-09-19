@@ -2,7 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import InscricaoConfirmada from "@/components/InscricaoConfirmada";
 import { getInscricaoPorLinha } from "@/lib/sheets";
-import { EVENTO } from "@/lib/evento";
+import { eventoAtual, fichaDaEdicao } from "@/lib/evento";
 import { estaConfirmado } from "@/lib/estados";
 
 export const metadata = {
@@ -23,15 +23,19 @@ export default async function ConfirmacaoPage({
     typeof searchParams.emailResponsavel === "string" ? searchParams.emailResponsavel : undefined;
 
   if (!nome || !email || !Number.isFinite(rowIndex)) {
-    redirect("/fire");
+    redirect("/fire/inscrever");
   }
 
   // Ao retomar a partir do link do email, evita mostrar de novo o formulário
   // de pagamento a quem já foi validado (manual ou automaticamente).
   let inicialmentePago = false;
+  // Mostra os dados da edição em que a pessoa se inscreveu (coluna X), mesmo
+  // que entretanto o site já tenha passado para a edição seguinte.
+  let EVENTO = eventoAtual();
   try {
     const inscrito = await getInscricaoPorLinha(rowIndex);
     inicialmentePago = inscrito ? estaConfirmado(inscrito.estado) : false;
+    if (inscrito?.edicao) EVENTO = fichaDaEdicao(inscrito.edicao);
   } catch (err) {
     console.error("Erro ao verificar estado do pagamento na Sheet:", err);
   }
