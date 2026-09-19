@@ -453,7 +453,8 @@ export async function getFeedback(): Promise<Feedback[]> {
       atividades: row[7] ?? "",
       comida: row[8] ?? "",
       espaco: row[9] ?? "",
-      avaliacao: Number(row[10]) || 0,
+      // Aceita meias estrelas vindas do papel ("4,5" ou "4.5"); 0 = sem estrelas.
+      avaliacao: Number(String(row[10] ?? "").replace(",", ".")) || 0,
       edicao: Number(row[11]) || 0,
       nome: row[12] ?? "",
     }))
