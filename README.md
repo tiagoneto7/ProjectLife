@@ -146,18 +146,19 @@ cada visita, por isso a troca não precisa de novo deploy.
 
 **As datas do FIRE mandam em tudo.** Em `FIRE` (`lib/evento.ts`) estão só o `inicio` e o `fim` (dia,
 mês e hora de check-in/check-out), o local e o valor (35€). Daí sai tudo o resto, para qualquer ano:
-o texto "11, 12 e 13 de Setembro, 2026" do site e dos emails, o check-in e o check-out do email
-"Enviar informações finais", e quando o FIRE conta como terminado — `DIAS_APOS_FIM` (3) dias depois
-do `fim`, os botões "+ Nova equipa" e "Enviar informações finais" do `/admin` desaparecem até ao ano
-seguinte. Para mudar as datas, muda só `inicio` e `fim`.
+o texto "11, 12 e 13 de Setembro, 2026" do site e dos emails e o check-in/check-out do email
+"Enviar informações finais". Para mudar as datas, muda só `inicio` e `fim`.
 
 - A edição de cada inscrição fica gravada na coluna **X** da aba "Inscrições" no momento da
   inscrição; o `/admin`, a página de confirmação, o pagamento e o email de pagamento confirmado usam
   sempre essa (quem se inscreveu em 2026 paga e vê os dados de 2026, mesmo depois da troca).
   Linhas antigas sem coluna X deduzem a edição pela data.
 - O **feedback** também usa o ano civil: as respostas de 2026 ficam em 2026 até 31/12.
-- No `/admin`, equipas e contas de qualquer edição continuam editáveis; as inscrições de edições
-  passadas ficam só de leitura.
+- No `/admin`, os botões de criar e enviar (nova equipa, informações finais, link do feedback)
+  aparecem durante todo o ano civil da edição e desaparecem nas edições passadas. **Exceção:** o
+  "+ Adicionar" das Contas está sempre disponível, porque pode ser preciso registar um movimento
+  antigo muito depois do FIRE. Equipas e contas de qualquer edição continuam editáveis; as
+  inscrições de edições passadas ficam só de leitura.
 
 ### Emails que não caiam no spam
 

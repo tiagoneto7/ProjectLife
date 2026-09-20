@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { InscritoRow, Equipa, Movimento, Feedback } from "@/lib/sheets";
-import { edicaoAtual, edicaoDaData, fichaDaEdicao, fireTerminou } from "@/lib/evento";
+import { edicaoAtual, edicaoDaData, fichaDaEdicao } from "@/lib/evento";
 import { ehVagaSocial, pagou } from "@/lib/estados";
 import { ehCategoriaInscricoes } from "@/lib/contas";
 import { agruparDestinatarios } from "@/components/AdminListaDestinatarios";
@@ -77,10 +77,9 @@ export default function AdminPainel({
 
   // Inscrições: a edição muda a 1 de janeiro, por isso uma edição passada é
   // só de leitura.
+  // Os botões de criar e enviar ficam disponíveis durante todo o ano civil da
+  // edição; nas edições passadas, só a consulta e a edição do que já existe.
   const arquivada = edicao !== atual;
-  // Depois do FIRE deixa de fazer sentido criar equipas ou enviar as
-  // informações finais — esses botões somem logo a seguir ao último dia.
-  const terminou = arquivada || fireTerminou(edicao);
   // Equipas e contas ficam editáveis em qualquer edição (faturas e lugares
   // finais chegam depois do fecho). O pedido de feedback só na edição atual —
   // é essa a que o formulário grava.
@@ -217,7 +216,6 @@ export default function AdminPainel({
           restricoesAlimentares={restricoesAlimentares}
           alergias={alergias}
           arquivada={arquivada}
-          terminou={terminou}
           readOnly={arquivada || !podeEditar}
           edicao={edicao}
         />
@@ -228,7 +226,7 @@ export default function AdminPainel({
           equipas={equipasDaEdicao}
           inscritos={visiveis}
           edicao={edicao}
-          arquivada={terminou}
+          arquivada={arquivada}
           readOnly={!podeEditar}
         />
       )}
@@ -238,7 +236,6 @@ export default function AdminPainel({
           {...contas}
           anterior={temAnterior ? contasAnterior : undefined}
           edicao={edicao}
-          arquivada={arquivada}
           readOnly={!podeEditar}
         />
       )}

@@ -57,8 +57,6 @@ type Props = ResumoContas & {
   /** Edição anterior, para a variação; ausente quando não tem nada registado. */
   anterior?: ResumoContas;
   readOnly?: boolean;
-  /** Ano passado: os movimentos existentes editam-se, mas não se adicionam novos. */
-  arquivada?: boolean;
 };
 
 /** Totais por categoria de um resumo — usado para a edição atual e a anterior. */
@@ -116,7 +114,6 @@ export default function AdminContas({
   totalSociais,
   edicao,
   readOnly = false,
-  arquivada = false,
 }: Props) {
   const router = useRouter();
   const [filtro, setFiltro] = useState<Filtro>("todos");
@@ -454,7 +451,9 @@ export default function AdminContas({
           ))}
         </div>
         <span className="flex-1" />
-        {!readOnly && !arquivada && (
+        {/* Sempre disponível, mesmo em edições passadas: pode ser preciso
+            acrescentar um movimento antigo muito depois do FIRE. */}
+        {!readOnly && (
           <button
             type="button"
             onClick={abrirNovo}

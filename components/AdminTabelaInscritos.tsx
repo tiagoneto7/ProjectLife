@@ -19,8 +19,6 @@ type Props = {
   alergias: ItemRestricao[];
   /** Edição já encerrada: mostra os dados, mas não deixa alterar nada. */
   arquivada?: boolean;
-  /** O FIRE desta edição já terminou: esconde o envio das informações finais. */
-  terminou?: boolean;
   /** Sem edição do estado/notas: edição arquivada ou acesso só de leitura. */
   readOnly?: boolean;
   edicao?: number;
@@ -80,7 +78,6 @@ export default function AdminTabelaInscritos({
   restricoesAlimentares,
   alergias,
   arquivada = false,
-  terminou = false,
   readOnly = arquivada,
   edicao,
 }: Props) {
@@ -146,7 +143,7 @@ export default function AdminTabelaInscritos({
               transparente
             />
           </div>
-          {!terminou && !readOnly && (
+          {!readOnly && (
             <div className="flex-1 sm:flex-none [&>button]:w-full">
               <AdminEnviarDocs
                 grupos={destinatarios}
